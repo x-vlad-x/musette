@@ -3,6 +3,7 @@ package io.github.x_vlad_x.simpmusicgtk
 import com.maxrave.common.AppIdentity
 import com.maxrave.common.SELECTED_LANGUAGE
 import com.maxrave.common.SUPPORTED_LANGUAGE
+import com.maxrave.common.SUPPORTED_LOCATION
 import com.maxrave.data.di.loader.loadAllModules
 import com.maxrave.domain.manager.DataStoreManager
 import com.maxrave.simpmusic.BuildKonfig
@@ -56,7 +57,8 @@ fun main(args: Array<String>) {
 /**
  * This interface has no language setting, so SimpMusic follows the system language like any GNOME
  * app: it is saved as SimpMusic's own choice, which also sets the language of YouTube's content.
- * A language SimpMusic doesn't support falls back to English.
+ * A language SimpMusic doesn't support falls back to English. The content region (SimpMusic's
+ * default is Vietnam) is taken from the system locale once, while it has never been chosen.
  */
 private fun followSystemLanguage(dataStore: DataStoreManager): String {
     val system = Locale.getDefault()
@@ -68,6 +70,9 @@ private fun followSystemLanguage(dataStore: DataStoreManager): String {
         } ?: SUPPORTED_LANGUAGE.codes.first()
     runBlocking {
         if (dataStore.getString(SELECTED_LANGUAGE).first() != code) dataStore.putString(SELECTED_LANGUAGE, code)
+        if (dataStore.getString("location").first() == null && system.country in SUPPORTED_LOCATION.items) {
+            dataStore.setLocation(system.country)
+        }
     }
     return code
 }

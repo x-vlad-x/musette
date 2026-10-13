@@ -106,8 +106,10 @@ class AlbumPage(
     scope: CoroutineScope,
     vms: PageViewModels,
     browseId: String,
+    autoplay: Boolean = false,
 ) : DetailPage() {
     private val vm = vms.add(getKoin().get<AlbumViewModel>())
+    private var autoplayPending = autoplay
 
     init {
         vm.updateBrowseId(browseId)
@@ -138,6 +140,10 @@ class AlbumPage(
                 }
                 column.append(list)
                 stack.visibleChildName = "content"
+                if (autoplayPending) {
+                    autoplayPending = false
+                    vm.playTrack(state.listTrack.first())
+                }
             }
         }
     }

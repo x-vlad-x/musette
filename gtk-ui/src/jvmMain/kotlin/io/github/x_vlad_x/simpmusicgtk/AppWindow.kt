@@ -66,7 +66,8 @@ class AppWindow(
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         val account = Account(this, appScope)
         stack.addTitledWithIcon(HomePage(this, appScope).widget, "home", tr(Res.string.home), "go-home-symbolic")
-        stack.addTitledWithIcon(SearchPage(this, appScope).widget, "search", tr(Res.string.search), "system-search-symbolic")
+        val search = SearchPage(this, appScope)
+        stack.addTitledWithIcon(search.widget, "search", tr(Res.string.search), "system-search-symbolic")
         val library = LibraryPage(this, appScope)
         stack.addTitledWithIcon(library.widget, "library", tr(Res.string.library), "folder-music-symbolic")
         stack.onNotify("visible-child-name") { if (stack.visibleChildName == "library") library.onShown() }
@@ -114,14 +115,27 @@ class AppWindow(
         toasts.child = player.sheet
         window.content = toasts
 
-        // Debug hook for testing without a touchscreen: SIMPMUSIC_GTK_OPEN=account|login|library|mostplayed|playlist:<id>
-        val open = System.getenv("SIMPMUSIC_GTK_OPEN").orEmpty()
-        when {
-            open == "account" -> account.openAccountPage()
-            open == "login" -> account.openLogin()
-            open == "library" -> stack.visibleChildName = "library"
-            open == "mostplayed" -> library.openSongs(LibraryDynamicPlaylistType.MostPlayed, tr(Res.string.most_played))
-            open.startsWith("playlist:") -> openPlaylist(open.removePrefix("playlist:"))
+        // Debug hook for testing without a touchscreen, comma-separated commands: SIMPMUSIC_GTK_OPEN=
+        // account|login|library|mostplayed|nowplaying|queue|search:<query>|album:<browseId>|
+        // playalbum:<browseId> (plays its first track)|artist:<channelId>|playlist:<id>
+        System.getenv("SIMPMUSIC_GTK_OPEN").orEmpty().split(",").forEach { open ->
+            when {
+                open == "account" -> account.openAccountPage()
+                open == "login" -> account.openLogin()
+                open == "library" -> stack.visibleChildName = "library"
+                open == "mostplayed" -> library.openSongs(LibraryDynamicPlaylistType.MostPlayed, tr(Res.string.most_played))
+                open == "nowplaying" || open == "queue" -> player.openWhenReady(queue = open == "queue")
+                open.startsWith("search:") -> {
+                    stack.visibleChildName = "search"
+                    search.showQuery(open.removePrefix("search:"))
+                    // Leave the entry, or a phone's on-screen keyboard covers the results.
+                    GLib.timeoutAddOnce(1000) { window.focus = null }
+                }
+                open.startsWith("album:") -> openAlbum(open.removePrefix("album:"))
+                open.startsWith("playalbum:") -> openAlbum(open.removePrefix("playalbum:"), autoplay = true)
+                open.startsWith("artist:") -> openArtist(open.removePrefix("artist:"))
+                open.startsWith("playlist:") -> openPlaylist(open.removePrefix("playlist:"))
+            }
         }
 
         // cmptoast keeps the ViewModels' messages in a Compose state; show them as Adwaita toasts.
@@ -171,7 +185,10 @@ class AppWindow(
         nav.push(page)
     }
 
-    fun openAlbum(browseId: String) = push(tr(Res.string.album)) { scope, vms -> AlbumPage(this, scope, vms, browseId).widget }
+    fun openAlbum(
+        browseId: String,
+        autoplay: Boolean = false,
+    ) = push(tr(Res.string.album)) { scope, vms -> AlbumPage(this, scope, vms, browseId, autoplay).widget }
 
     fun openPlaylist(playlistId: String) = push(tr(Res.string.playlist)) { scope, vms -> PlaylistPage(this, scope, vms, playlistId).widget }
 

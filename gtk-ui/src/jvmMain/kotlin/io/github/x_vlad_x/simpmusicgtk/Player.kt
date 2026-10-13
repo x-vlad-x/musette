@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.gnome.adw.BottomSheet
 import org.gnome.adw.Clamp
+import org.gnome.glib.GLib
 import org.gnome.gtk.Adjustment
 import org.gnome.gtk.Align
 import org.gnome.gtk.Box
@@ -141,6 +142,16 @@ class Player(
             }
         }
         scope.launch { shared.getQueueDataState().collect { renderQueue() } }
+    }
+
+    /** Opens Now Playing (or the queue) as soon as there is a track (debug hook). */
+    fun openWhenReady(queue: Boolean) {
+        GLib.timeoutAdd(GLib.PRIORITY_DEFAULT, 500) {
+            if (!sheet.revealBottomBar) return@timeoutAdd true
+            sheet.open = true
+            if (queue) sheetStack.visibleChildName = "queue"
+            false
+        }
     }
 
     private fun picture() =

@@ -187,6 +187,12 @@ class SearchPage(
                 }
         }
 
+    /** Searches for [text] as if it were typed, without adding it to the history (debug hook). */
+    fun showQuery(text: String) {
+        entry.text = text
+        search(text, record = false)
+    }
+
     private fun search(
         text: String,
         record: Boolean = true,
