@@ -1,0 +1,28 @@
+diff --git a/composeApp/build.gradle.kts b/composeApp/build.gradle.kts
+index dd0337b2..60da4695 100644
+--- a/composeApp/build.gradle.kts
++++ b/composeApp/build.gradle.kts
+@@ -35,6 +35,8 @@ plugins {
+ // Force it to `always` so `Res` is generated for this app module.
+ compose.resources {
+     generateResClass = always
++    // GTK front-end patch: ../gtk-ui shows SimpMusic's own translated strings.
++    publicResClass = true
+ }
+ 
+ kotlin {
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+index 7feae706..31471700 100644
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -64,6 +64,10 @@ include(
+     ":loginSync",
+ )
+ 
++// GTK front-end patch: the native GNOME interface, kept outside this checkout (see ../gtk-ui).
++include(":gtkApp")
++project(":gtkApp").projectDir = File(rootDir, "../gtk-ui")
++
+ // core modules
+ project(":common").projectDir = File(coreDir, "common")
+ project(":data").projectDir = File(coreDir, "data")

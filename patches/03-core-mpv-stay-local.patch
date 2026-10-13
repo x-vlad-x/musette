@@ -1,0 +1,21 @@
+diff --git a/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt b/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
+index f541816..571097e 100644
+--- a/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
++++ b/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
+@@ -439,10 +439,12 @@ interface MpvLibrary : Library {
+                     // On a dev machine with libmpv installed system-wide both a working bundle
+                     // and a broken one load fine — the only way to tell them apart is to see
+                     // whether this points inside the app or at /usr/lib.
+-                    val resolved =
+-                        runCatching {
+-                            com.sun.jna.NativeLibrary.getInstance(name).file?.absolutePath
+-                        }.getOrNull() ?: "<unknown>"
++                    // GTK front-end patch: NOT NativeLibrary.getInstance(name) — JNA caches libraries by
++                    // name + options, so that call dlopen()s libmpv a second time with its default
++                    // RTLD_GLOBAL and undoes the private load above. libmpv's libmujs then exports
++                    // js_malloc/js_free/js_realloc/js_strdup process-wide, QuickJS (signature
++                    // deciphering, used once signed in) binds to them and crashes in JS_NewContext.
++                    val resolved = name
+                     Logger.d(
+                         TAG,
+                         "Loaded libmpv as '$name' (client API ${version shr 16}.${version and 0xFFFF}) from $resolved",

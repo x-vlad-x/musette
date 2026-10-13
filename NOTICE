@@ -1,0 +1,17 @@
+SimpMusic (GTK)
+Copyright 2026 Vladislav Shadiuk
+
+Licensed under the GNU General Public License, version 3 (see LICENSE).
+
+This is an unofficial interface for SimpMusic and is not affiliated with or endorsed by the
+SimpMusic project.
+
+It is built on SimpMusic (https://github.com/maxrave-dev/SimpMusic):
+  Copyright maxrave-dev and SimpMusic contributors
+  Licensed under the GNU General Public License, version 3.
+The SimpMusic sources are not part of this repository; the build script downloads them from
+https://github.com/maxrave-dev/SimpMusic. The patches in patches/ modify those sources. The
+application icon (packaging/io.github.x_vlad_x.SimpMusicGtk.png) and most of the UI translations
+come from SimpMusic.
+
+YouTube and YouTube Music are trademarks of Google LLC.

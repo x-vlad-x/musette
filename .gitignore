@@ -1,0 +1,6 @@
+# SimpMusic sources, cloned by update-simpmusic-gtk.sh
+/SimpMusic/
+# Build output
+/gtk-ui/build/
+/out/
+*.log
