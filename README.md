@@ -5,6 +5,11 @@ the FOSS YouTube Music client, made for Linux phones. Developed and tested on th
 FuriOS (Phosh), but it should work on any aarch64 phone or tablet with libadwaita 1.7+ (Debian 13 or
 newer).
 
+| | | | |
+|:-:|:-:|:-:|:-:|
+| ![Home](docs/screenshots/home.webp) | ![Search](docs/screenshots/search.webp) | ![Album](docs/screenshots/album.webp) | ![Artist](docs/screenshots/artist.webp) |
+| ![Now Playing](docs/screenshots/now-playing.webp) | ![Queue](docs/screenshots/queue.webp) | ![Library](docs/screenshots/library.webp) | ![Home in Russian](docs/screenshots/home-russian.webp) |
+
 The core (YouTube Music client, streams, local database, mpv playback) and the app logic (SimpMusic's
 ViewModels) are the official SimpMusic code with three small patches. The interface is new, written
 in Kotlin with [java-gi](https://github.com/jwharm/java-gi), and adapts to the window: a bottom tab
@@ -22,7 +27,8 @@ bar on a phone, tabs in the header bar on a wider screen.
 Lyrics, downloads and SimpMusic's settings screens are not there yet.
 
 The interface comes in every language SimpMusic is translated into: its strings are SimpMusic's own,
-except for a few in `gtk-ui/src/jvmMain/resources/strings/`. The language follows the system locale.
+except for a few in `gtk-ui/src/jvmMain/resources/strings/`. The language follows the system locale,
+and so does the region of YouTube's content until one is chosen.
 
 ## Building and installing
 
@@ -66,8 +72,13 @@ Runtime dependencies from the system: GTK 4, libadwaita, WebKitGTK 6.0 and libmp
 ## Debugging
 
 The app writes its log to `~/.local/share/simpmusic-gtk/run.log`. For testing without touching the
-screen, `SIMPMUSIC_GTK_OPEN` opens a page on start: `account`, `login`, `library`, `mostplayed` or
-`playlist:<id>`.
+screen, `SIMPMUSIC_GTK_OPEN` runs comma-separated commands on start: `account`, `login`, `library`,
+`mostplayed`, `nowplaying`, `queue`, `search:<query>`, `album:<browseId>`, `playalbum:<browseId>`
+(also plays its first track), `artist:<channelId>`, `playlist:<id>`. For example:
+
+```bash
+SIMPMUSIC_GTK_OPEN=playalbum:MPREb_K8qWMWVqXGi,nowplaying ~/.local/share/simpmusic-gtk/simpmusic-gtk
+```
 
 ## License
 
