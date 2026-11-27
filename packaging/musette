@@ -4,6 +4,11 @@ set -eu
 umask 077
 
 app_dir="$(dirname "$(readlink -f "$0")")"
+main_class=io.github.x_vlad_x.musette.MainKt
+classpath="$app_dir/lib/gtkApp-jvm.jar:$app_dir/lib/*"
+if [ "$#" -eq 1 ] && [ "$1" = --version ]; then
+  exec "$app_dir/jre/bin/java" -cp "$classpath" "$main_class" "$@"
+fi
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
 data_dir="$data_home/musette"
@@ -35,5 +40,4 @@ exec "$app_dir/jre/bin/java" \
   --enable-native-access=ALL-UNNAMED \
   -Duser.home="$data_dir" \
   -XX:ErrorFile="$cache_dir/hs_err_pid%p.log" \
-  -cp "$app_dir/lib/gtkApp-jvm.jar:$app_dir/lib/*" \
-  io.github.x_vlad_x.musette.MainKt "$@" >"$cache_dir/run.log" 2>&1
+  -cp "$classpath" "$main_class" "$@" >"$cache_dir/run.log" 2>&1

@@ -9,13 +9,13 @@ import com.maxrave.common.SUPPORTED_LOCATION
 import com.maxrave.data.di.loader.loadAllModules
 import com.maxrave.domain.data.player.AppOnScreen
 import com.maxrave.domain.manager.DataStoreManager
-import com.maxrave.simpmusic.BuildKonfig
 import com.maxrave.simpmusic.di.viewModelModule
 import com.maxrave.simpmusic.viewModel.changeLanguageNative
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.gnome.adw.Application
 import org.gnome.gio.ApplicationFlags
+import org.gnome.gio.SimpleAction
 import org.gnome.glib.GLib
 import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
@@ -28,6 +28,10 @@ const val APP_ID = "io.github.x_vlad_x.Musette"
 const val APP_NAME = "Musette"
 
 fun main(args: Array<String>) {
+    if (args.size == 1 && args[0] == "--version") {
+        println(BuildInfo.summary())
+        return
+    }
     // libhybris devices (FuriOS, Droidian…): the GPU driver lives under /android, which WebKit's
     // bubblewrap sandbox hides, so the web process dies loading libEGL and the sign-in page stays
     // blank. That web view only ever shows Google's sign-in pages.
@@ -37,7 +41,7 @@ fun main(args: Array<String>) {
         loadAllModules(
             AppIdentity(
                 applicationId = APP_ID,
-                versionName = BuildKonfig.versionName,
+                versionName = BuildInfo.version,
                 platform = "${System.getProperty("os.name")} ${System.getProperty("os.version")} (GTK)",
             ),
         )
@@ -50,6 +54,7 @@ fun main(args: Array<String>) {
     GLib.setApplicationName(APP_NAME)
     val app = Application(APP_ID, ApplicationFlags.DEFAULT_FLAGS)
     var window: AppWindow? = null
+    app.addAction(SimpleAction("about", null).apply { onActivate { window?.let { showAbout(it.window) } } })
     // gtk_init runs setlocale(LC_ALL, ""), which undoes the LC_NUMERIC=C that MpvLibrary set when
     // it loaded — and libmpv's mpv_create() returns NULL under any other numeric locale.
     app.onStartup { forceCNumericLocale() }
@@ -59,7 +64,7 @@ fun main(args: Array<String>) {
             installCss()
             window = AppWindow(app)
         }
-        window!!.window.present()
+        window.window.present()
     }
     app.run(args)
 }

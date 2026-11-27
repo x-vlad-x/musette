@@ -38,6 +38,13 @@ kotlin {
     }
 }
 
+tasks.named<ProcessResources>("jvmProcessResources") {
+    from(projectDir.parentFile) {
+        include("VERSION", "upstream.env")
+        into("musette")
+    }
+}
+
 // build/gtk-dist/lib: the app jar plus every runtime jar, run with `java -cp 'lib/*'`.
 // A plain classpath keeps META-INF/services intact (the GTK main dispatcher is found through it).
 // Jars are prefixed with their group: org.jetbrains.androidx and androidx publish same-named files.
