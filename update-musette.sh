@@ -70,12 +70,16 @@ install_dir=$1
 app_id=$2
 data_home=${XDG_DATA_HOME:-$HOME/.local/share}
 cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
+icons="$data_home/icons/hicolor"
 if [ "$(readlink .local/bin/musette || :)" = "$HOME/$install_dir/musette" ]; then
   rm .local/bin/musette
 fi
 rm -rf "$install_dir" "$cache_home/musette"
 rm -f "$data_home/applications/$app_id.desktop" "$data_home/metainfo/$app_id.metainfo.xml" \
-  "$data_home/icons/hicolor/scalable/apps/$app_id.svg" "$data_home/icons/hicolor/symbolic/apps/$app_id-symbolic.svg"
+  "$icons/scalable/apps/$app_id.svg" "$icons/symbolic/apps/$app_id-symbolic.svg"
+if [ -d "$icons" ] && command -v gtk-update-icon-cache >/dev/null; then
+  gtk-update-icon-cache --force --ignore-theme-index "$icons"
+fi
 if [ "$3" -eq 1 ]; then rm -rf "$data_home/musette"; fi
 update-desktop-database "$data_home/applications" 2>/dev/null || true
 REMOTE
@@ -182,6 +186,10 @@ sed 's|^Exec=musette$|Exec="'"$HOME/$install_dir/musette"'"|' \
 cp "$install_dir/$app_id.metainfo.xml" "$data_home/metainfo/"
 cp "$install_dir/$app_id.svg" "$icons/scalable/apps/"
 cp "$install_dir/$app_id-symbolic.svg" "$icons/symbolic/apps/"
+# Phosh uses the icon index, including for SVGs in an existing user theme.
+if command -v gtk-update-icon-cache >/dev/null; then
+  gtk-update-icon-cache --force --ignore-theme-index "$icons"
+fi
 if [ ! -e .local/bin/musette ] && [ ! -L .local/bin/musette ]; then
   ln -s "$HOME/$install_dir/musette" .local/bin/musette
 fi
