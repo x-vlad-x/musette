@@ -28,6 +28,8 @@ bar on a phone, tabs in the header bar on a wider screen.
   and mixes of the signed-in account, saved albums and playlists, recently added;
 - mini player and a Now Playing sheet: seek, shuffle, repeat, like, queue;
 - MPRIS playback controls and track information in Phosh;
+- background playback when the window is closed. Open Musette again to show the window, or use
+  **Quit** in the window menu to stop playback and exit;
 - YouTube sign-in through Google's page in a web view (WebKitGTK), several accounts, sign-in with a
   cookie as a fallback.
 

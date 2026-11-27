@@ -9,6 +9,7 @@ import com.maxrave.common.SUPPORTED_LOCATION
 import com.maxrave.data.di.loader.loadAllModules
 import com.maxrave.domain.data.player.AppOnScreen
 import com.maxrave.domain.manager.DataStoreManager
+import com.maxrave.domain.mediaservice.handler.MediaPlayerHandler
 import com.maxrave.simpmusic.di.viewModelModule
 import com.maxrave.simpmusic.viewModel.changeLanguageNative
 import kotlinx.coroutines.flow.first
@@ -19,10 +20,12 @@ import org.gnome.gio.SimpleAction
 import org.gnome.glib.GLib
 import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.mp.KoinPlatform.getKoin
 import java.util.Locale
+import kotlin.system.exitProcess
 
 const val APP_ID = "io.github.x_vlad_x.Musette"
 const val APP_NAME = "Musette"
@@ -38,37 +41,53 @@ fun main(args: Array<String>) {
     // bubblewrap sandbox hides, so the web process dies loading libEGL and the sign-in page stays
     // blank. That web view only ever shows Google's sign-in pages.
     if (java.io.File("/android/system").isDirectory) setEnv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1")
-    AppOnScreen.set(false)
-    startKoin {
-        loadAllModules(
-            AppIdentity(
-                applicationId = APP_ID,
-                versionName = BuildInfo.version,
-                platform = "${System.getProperty("os.name")} ${System.getProperty("os.version")} (GTK)",
-            ),
-        )
-        loadKoinModules(viewModelModule)
-        loadKoinModules(module { single(named("fetchPlayerExtras")) { false } })
-    }
-    changeLanguageNative(followSystemLanguage(getKoin().get()))
-
     // GApplication is single-instance by itself: a second launch just re-activates this one.
     GLib.setApplicationName(APP_NAME)
     val app = Application(APP_ID, ApplicationFlags.DEFAULT_FLAGS)
     var window: AppWindow? = null
     app.addAction(SimpleAction("about", null).apply { onActivate { window?.let { showAbout(it.window) } } })
+    app.addAction(SimpleAction("close-window", null).apply { onActivate { window?.window?.close() } })
+    app.addAction(SimpleAction("quit", null).apply { onActivate { app.quit() } })
+    app.setAccelsForAction("app.close-window", arrayOf("<Primary>w"))
+    app.setAccelsForAction("app.quit", arrayOf("<Primary>q"))
     // gtk_init runs setlocale(LC_ALL, ""), which undoes the LC_NUMERIC=C that MpvLibrary set when
     // it loaded — and libmpv's mpv_create() returns NULL under any other numeric locale.
-    app.onStartup { forceCNumericLocale() }
-    app.onActivate {
+    app.onStartup {
         forceCNumericLocale()
-        if (window == null) {
-            installCss()
-            window = AppWindow(app)
+        AppOnScreen.set(false)
+        startKoin {
+            loadAllModules(
+                AppIdentity(
+                    applicationId = APP_ID,
+                    versionName = BuildInfo.version,
+                    platform = "${System.getProperty("os.name")} ${System.getProperty("os.version")} (GTK)",
+                ),
+            )
+            loadKoinModules(viewModelModule)
+            loadKoinModules(module { single(named("fetchPlayerExtras")) { false } })
         }
-        window.window.present()
+        changeLanguageNative(followSystemLanguage(getKoin().get()))
     }
-    app.run(args)
+    app.onActivate {
+        val activeWindow =
+            window ?: run {
+                installCss()
+                AppWindow(app).also {
+                    window = it
+                    app.hold()
+                }
+            }
+        activeWindow.window.present()
+    }
+    app.onShutdown {
+        AppOnScreen.set(false)
+        window?.let {
+            it.release()
+            getKoin().get<MediaPlayerHandler>().release()
+        }
+        stopKoin()
+    }
+    exitProcess(app.run(args))
 }
 
 /**
