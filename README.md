@@ -65,6 +65,9 @@ from `~/.local/share/simpmusic-gtk/home` if the new profile directory is absent.
 live in `${XDG_CACHE_HOME:-$HOME/.cache}/musette`. The installation runs as your user.
 Runtime dependencies from the system: GTK 4, libadwaita, WebKitGTK 6.0 and libmpv.
 
+Open **About Musette** from the window menu to see the version, source links and credits.
+The `musette --version` command also reports the upstream version without opening a window.
+
 ## Project layout
 
 - `gtk-ui/` — the interface (Gradle module `:gtkApp`): `AppWindow` (navigation, tabs), `HomePage`,

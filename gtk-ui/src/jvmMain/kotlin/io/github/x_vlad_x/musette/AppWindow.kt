@@ -35,7 +35,9 @@ import org.gnome.adw.ViewSwitcherPolicy
 import org.gnome.adw.WindowTitle
 import org.gnome.gdk.Toplevel
 import org.gnome.gdk.ToplevelState
+import org.gnome.gio.Menu
 import org.gnome.glib.GLib
+import org.gnome.gtk.MenuButton
 import org.gnome.gtk.Widget
 import org.koin.mp.KoinPlatform.getKoin
 import simpmusic.composeapp.generated.resources.Res
@@ -90,6 +92,13 @@ class AppWindow(
         val narrowTitle = WindowTitle(APP_NAME, "")
         val header =
             HeaderBar().apply {
+                packEnd(
+                    MenuButton().apply {
+                        iconName = "open-menu-symbolic"
+                        tooltipText = gtr("main_menu")
+                        menuModel = Menu().apply { append(gtr("about_musette"), "app.about") }
+                    },
+                )
                 packEnd(account.headerButton)
                 titleWidget = switcher
             }

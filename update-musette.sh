@@ -54,7 +54,7 @@ stop_app() { rsh "pkill -f '[i]o.github.x_vlad_x.musette[.]MainKt' || true"; }
 
 ui_rev() {
   find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging" \
-       "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
+       "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/VERSION" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
        "$SCRIPT_DIR/update-musette.sh" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
 }
 
@@ -87,10 +87,10 @@ fi
 
 # --- which version -----------------------------------------------------------
 source "$SCRIPT_DIR/upstream.env"
-VERSION="${SIMPMUSIC_TAG#v}"
+VERSION="$(cat "$SCRIPT_DIR/VERSION")"
 UI_REV="$(ui_rev)"
 FULL_VERSION="$VERSION+gtk.$UI_REV"
-log "SimpMusic: $VERSION, interface: $UI_REV"
+log "Musette $VERSION, SimpMusic $SIMPMUSIC_TAG, build $UI_REV"
 
 INSTALLED=""
 if [[ $BUILD_ONLY -eq 0 ]]; then
@@ -137,6 +137,8 @@ else
   clang --target=aarch64-linux-gnu -O2 -fPIC -shared -nostdlib -fuse-ld=lld -Wl,-soname,libsixel.so.1 \
     -o "$DIST/native/libsixel.so.1" "$SCRIPT_DIR/sixel-stub/sixel_stub.c"
   cp "$SCRIPT_DIR"/packaging/* "$DIST/"
+  printf '{\n  "version": "%s",\n  "simpmusicTag": "%s",\n  "simpmusicCommit": "%s",\n  "coreCommit": "%s"\n}\n' \
+    "$VERSION" "$SIMPMUSIC_TAG" "$SIMPMUSIC_COMMIT" "$CORE_COMMIT" > "$DIST/build-info.json"
   echo "$FULL_VERSION" > "$DIST/VERSION"
   echo "Done: $DIST ($(du -sh "$DIST" | cut -f1))"
 fi
