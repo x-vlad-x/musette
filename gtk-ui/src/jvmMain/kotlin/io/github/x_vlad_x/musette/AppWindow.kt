@@ -63,10 +63,12 @@ class AppWindow(
     private val toasts = ToastOverlay()
     private val pageCleanups = HashMap<NavigationPage, () -> Unit>()
     private val accountListeners = mutableListOf<() -> Unit>()
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     init {
         window.title = APP_NAME
         window.iconName = APP_ID
+        window.hideOnClose = true
         window.setDefaultSize(420, 860)
         window.setSizeRequest(360, 500)
         window.onRealize { window.surface?.onNotify("state") { updateOnScreen() } }
@@ -75,7 +77,6 @@ class AppWindow(
         window.onUnmap { AppOnScreen.set(false) }
 
         val stack = ViewStack()
-        val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         val account = Account(this, appScope)
         stack.addTitledWithIcon(HomePage(this, appScope).widget, "home", tr(Res.string.home), "go-home-symbolic")
         val search = SearchPage(this, appScope)
@@ -96,7 +97,11 @@ class AppWindow(
                     MenuButton().apply {
                         iconName = "open-menu-symbolic"
                         tooltipText = gtr("main_menu")
-                        menuModel = Menu().apply { append(gtr("about_musette"), "app.about") }
+                        menuModel =
+                            Menu().apply {
+                                append(gtr("about_musette"), "app.about")
+                                append(gtr("quit"), "app.quit")
+                            }
                     },
                 )
                 packEnd(account.headerButton)
@@ -165,6 +170,11 @@ class AppWindow(
             }
             true
         }
+    }
+
+    fun release() {
+        appScope.cancel()
+        pageCleanups.values.forEach { it() }
     }
 
     private fun updateOnScreen() {
