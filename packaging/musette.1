@@ -1,0 +1,38 @@
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH MUSETTE 1 "2026-11-27" "Musette" "User Commands"
+.SH NAME
+musette \- YouTube Music player for Linux phones
+.SH SYNOPSIS
+.B musette
+.RB [ \-\-version ]
+.SH DESCRIPTION
+Musette is an unofficial YouTube Music client built on SimpMusic, with a
+GTK 4 and libadwaita interface for Phosh.
+Closing the window keeps the music playing; start
+.B musette
+again to show the window, or choose
+.B Quit
+in the window menu to stop playback and exit.
+.SH OPTIONS
+.TP
+.B \-\-version
+Print the Musette version and the SimpMusic version it is built on, then exit.
+.SH ENVIRONMENT
+.TP
+.B MUSETTE_OPEN
+Comma-separated pages to open at start, for debugging: for example
+.BR library ,
+.BR nowplaying ,
+.BR search:\fIquery\fP .
+.SH FILES
+.TP
+.I ${XDG_DATA_HOME:-~/.local/share}/musette
+Account, history, library and settings.
+.TP
+.I ${XDG_CACHE_HOME:-~/.cache}/musette
+Thumbnails and the log,
+.IR run.log .
+.SH BUGS
+Report problems at https://github.com/x-vlad-x/musette/issues.
+.SH SEE ALSO
+https://github.com/x-vlad-x/musette

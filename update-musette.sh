@@ -20,15 +20,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC_DIR="$(realpath -m "${SIMPMUSIC_SRC:-$SCRIPT_DIR/SimpMusic}")"
 PATCH_DIR="$SCRIPT_DIR/patches"
-OUT_DIR="$SCRIPT_DIR/out"
 PHONE="${PHONE:-furios}"                       # SSH host, e.g. from ~/.ssh/config
 REMOTE_DIR=".local/lib/musette"
 APP_ID="io.github.x_vlad_x.Musette"
-
-export JAVA_HOME="${JAVA_HOME_21:-$HOME/Android/jdk-21}"
-export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 
 FORCE=0; BUILD_ONLY=0; CHECK=0; UNINSTALL=0; PURGE=0
 while [[ $# -gt 0 ]]; do
@@ -50,9 +45,11 @@ rsh() { ssh -o BatchMode=yes -o ConnectTimeout=10 "$PHONE" "$@"; }
 stop_app() { rsh "pkill -f '[i]o.github.x_vlad_x.musette[.]MainKt' || true"; }
 
 ui_rev() {
-  find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging" \
+  find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging/musette" \
+       "$SCRIPT_DIR"/packaging/io.github.x_vlad_x.Musette* \
        "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/VERSION" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
-       "$SCRIPT_DIR/runtime.env" "$SCRIPT_DIR/tools/build-runtime.sh" "$SCRIPT_DIR/update-musette.sh" \
+       "$SCRIPT_DIR/runtime.env" "$SCRIPT_DIR/tools/build-runtime.sh" "$SCRIPT_DIR/tools/build-dist.sh" \
+       "$SCRIPT_DIR/update-musette.sh" \
        -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
 }
 
@@ -110,40 +107,9 @@ if [[ $BUILD_ONLY -eq 0 && "$INSTALLED" == "$FULL_VERSION" && $FORCE -eq 0 ]]; t
 fi
 
 # --- build -------------------------------------------------------------------
-DIST="$OUT_DIR/musette-$FULL_VERSION"
-if [[ -f "$DIST/VERSION" && $FORCE -eq 0 ]]; then
-  log "Already built: $DIST"
-else
-  [[ -x "$JAVA_HOME/bin/java" ]] || die "no JDK 21 in $JAVA_HOME (set JAVA_HOME_21)"
-  [[ -d "$ANDROID_HOME/platforms" ]] || die "no Android SDK in $ANDROID_HOME (SimpMusic's Gradle project needs it to configure)"
-  command -v clang >/dev/null && command -v ld.lld >/dev/null || die "clang and lld are required (for sixel-stub/)"
-
-  log "Preparing pinned SimpMusic sources"
-  SIMPMUSIC_SRC="$SRC_DIR" "$SCRIPT_DIR/tools/fetch-upstream.sh"
-  restore_sources() {
-    git -C "$SRC_DIR" restore --worktree :/
-    git -C "$SRC_DIR/core" restore --worktree :/
-  }
-  trap restore_sources EXIT
-  cd "$SRC_DIR"
-  echo "sdk.dir=$ANDROID_HOME" > local.properties
-  log "Building (5-10 minutes the first time)"
-  GTK_UI_DIR="$SCRIPT_DIR/gtk-ui" ./gradlew --no-configuration-cache -PisFullBuild=false :gtkApp:gtkDist ||
-    die "the build failed, see the errors above"
-  restore_sources
-  trap - EXIT
-
-  log "Packaging: $DIST"
-  rm -rf "$DIST" && mkdir -p "$DIST/native"
-  cp -r "$SCRIPT_DIR/gtk-ui/build/gtk-dist/lib" "$DIST/lib"
-  clang --target=aarch64-linux-gnu -O2 -fPIC -shared -nostdlib -fuse-ld=lld -Wl,-soname,libsixel.so.1 \
-    -o "$DIST/native/libsixel.so.1" "$SCRIPT_DIR/sixel-stub/sixel_stub.c"
-  cp "$SCRIPT_DIR"/packaging/* "$DIST/"
-  printf '{\n  "version": "%s",\n  "simpmusicTag": "%s",\n  "simpmusicCommit": "%s",\n  "coreCommit": "%s"\n}\n' \
-    "$VERSION" "$SIMPMUSIC_TAG" "$SIMPMUSIC_COMMIT" "$CORE_COMMIT" > "$DIST/build-info.json"
-  echo "$FULL_VERSION" > "$DIST/VERSION"
-  echo "Done: $DIST ($(du -sh "$DIST" | cut -f1))"
-fi
+dist_args=()
+[[ $FORCE -eq 1 ]] && dist_args+=(--force)
+DIST="$("$SCRIPT_DIR/tools/build-dist.sh" "${dist_args[@]}")"
 
 [[ $BUILD_ONLY -eq 1 ]] && exit 0
 

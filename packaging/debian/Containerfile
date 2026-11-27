@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# ARM64 Debian 13 environment for the DEB: it computes the dependencies of the Java runtime,
+# builds the libsixel stub against the target C library and runs lintian. On an x86-64 machine
+# it runs through qemu-user (binfmt_misc).
+FROM docker.io/library/debian:trixie-20261005
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      dpkg-dev fakeroot gcc libc6-dev binutils file lintian desktop-file-utils appstream \
+      libasound2t64 libx11-6 libxext6 libxi6 libxrender1 libxtst6 libfreetype6 \
+ && rm -rf /var/lib/apt/lists/*
