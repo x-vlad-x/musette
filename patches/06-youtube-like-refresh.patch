@@ -1,0 +1,22 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: Refresh the current track rating after an account change
+Date: 2026-11-27
+Upstream status: Local only
+
+Let front ends reload the current track rating when the active account
+changes during playback.
+
+diff --git a/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt b/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
+--- a/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
++++ b/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
+@@ -2104,6 +2104,10 @@
+         }
+     }
+
++    fun refreshYouTubeLikeStatus() {
++        mediaPlayerHandler.nowPlaying.value?.mediaId?.takeIf { it.isNotBlank() }?.let(::getLikeStatus)
++    }
++
+     fun addToYouTubeLiked() {
+         viewModelScope.launch {
+             val videoId = mediaPlayerHandler.nowPlaying.first()?.mediaId
