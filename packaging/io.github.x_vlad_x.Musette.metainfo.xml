@@ -17,8 +17,8 @@
     </p>
   </description>
   <launchable type="desktop-id">io.github.x_vlad_x.Musette.desktop</launchable>
-  <url type="homepage">https://github.com/x-vlad-x/simpmusic-gtk</url>
-  <url type="bugtracker">https://github.com/x-vlad-x/simpmusic-gtk/issues</url>
+  <url type="homepage">https://github.com/x-vlad-x/musette</url>
+  <url type="bugtracker">https://github.com/x-vlad-x/musette/issues</url>
   <provides>
     <binary>musette</binary>
   </provides>
