@@ -42,9 +42,9 @@ and so does the region of YouTube's content until one is chosen.
 
 ## Building and installing
 
-Requirements on the build machine (x86_64 Linux): git, curl, ssh, JDK 21, the Android SDK (only
-because SimpMusic's Gradle project needs it to configure), clang and lld. Gradle fetches the JDK 25
-toolchain by itself. The phone must be reachable over SSH with key authentication.
+The x86_64 Linux build machine needs Git, curl, SSH, JDK 21, the Android SDK, clang and lld.
+Installing also needs llvm-objcopy to link the aarch64 Java runtime. Gradle fetches its JDK 25
+toolchain. The phone must be reachable over SSH with key authentication.
 
 ```bash
 ./update-musette.sh                # build the pinned SimpMusic revision and install it on the phone
@@ -63,7 +63,8 @@ packages it with its dependencies into `out/`. JVM bytecode is the same
 on every architecture, so nothing is cross-compiled except a tiny native stub (see below). The first
 build takes 5–10 minutes.
 
-The developer install goes to `~/.local/lib/musette` with a private Temurin 25 runtime. Profiles live in
+The developer install goes to `~/.local/lib/musette` with a compact Temurin 25 runtime.
+The runtime build uses the version and SHA-256 checksums in `runtime.env`. Profiles live in
 `${XDG_DATA_HOME:-$HOME/.local/share}/musette`. On first launch, Musette copies an existing profile
 from `~/.local/share/simpmusic-gtk/home` if the new profile directory is absent. Thumbnails and logs
 live in `${XDG_CACHE_HOME:-$HOME/.cache}/musette`. The installation runs as your user.
