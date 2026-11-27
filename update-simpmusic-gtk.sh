@@ -2,11 +2,10 @@
 # Builds SimpMusic with a native GNOME interface (GTK4 + libadwaita) for aarch64 Linux phones
 # (tested on the FuriLabs FLX1s with FuriOS) and installs it over SSH.
 #
-#   ./update-simpmusic-gtk.sh                 build the latest release, install it if the phone has an older one
+#   ./update-simpmusic-gtk.sh                 build and install the revision in upstream.env
 #   ./update-simpmusic-gtk.sh --force         rebuild and reinstall even if the version is the same
-#   ./update-simpmusic-gtk.sh --tag <tag>     build a specific SimpMusic tag (e.g. v2.3.0)
 #   ./update-simpmusic-gtk.sh --build-only    only build, don't install on the phone
-#   ./update-simpmusic-gtk.sh --check         only check what is installed on the phone and what's released
+#   ./update-simpmusic-gtk.sh --check         compare the phone installation with the pinned build
 #   ./update-simpmusic-gtk.sh --uninstall     remove from the phone (account, history and settings are kept;
 #                                             --uninstall --purge removes them too)
 #
@@ -21,12 +20,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC_DIR="${SIMPMUSIC_SRC:-$SCRIPT_DIR/SimpMusic}"
+SRC_DIR="$(realpath -m "${SIMPMUSIC_SRC:-$SCRIPT_DIR/SimpMusic}")"
 PATCH_DIR="$SCRIPT_DIR/patches"
 OUT_DIR="$SCRIPT_DIR/out"
 PHONE="${PHONE:-furios}"                       # SSH host, e.g. from ~/.ssh/config
 REMOTE_DIR=".local/share/simpmusic-gtk"        # relative to $HOME on the phone
-REPO_URL="https://github.com/maxrave-dev/SimpMusic"
 APP_ID="io.github.x_vlad_x.SimpMusicGtk"
 JRE_URL="https://api.adoptium.net/v3/binary/latest/25/ga/linux/aarch64/jre/hotspot/normal/eclipse"
 # Left over from earlier builds (the Compose desktop build and the old app id), removed on install.
@@ -36,12 +34,11 @@ LEGACY_FILES+=" .local/share/applications/com.maxrave.simpmusic.gtk.desktop .loc
 export JAVA_HOME="${JAVA_HOME_21:-$HOME/Android/jdk-21}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 
-FORCE=0; BUILD_ONLY=0; TAG=""; CHECK=0; UNINSTALL=0; PURGE=0
+FORCE=0; BUILD_ONLY=0; CHECK=0; UNINSTALL=0; PURGE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --force) FORCE=1 ;;
     --build-only) BUILD_ONLY=1 ;;
-    --tag) TAG="$2"; shift ;;
     --check) CHECK=1 ;;
     --uninstall) UNINSTALL=1 ;;
     --purge) PURGE=1 ;;
@@ -58,7 +55,8 @@ stop_app() { rsh "pkill -f '[s]impmusicgtk[.]MainKt|[s]impmusic[.]gtk[.]MainKt' 
 
 ui_rev() {
   find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging" \
-       "$SCRIPT_DIR/sixel-stub/sixel_stub.c" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
+       "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
+       "$SCRIPT_DIR/update-simpmusic-gtk.sh" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
 }
 
 # --- uninstall ---------------------------------------------------------------
@@ -77,18 +75,15 @@ if [[ $UNINSTALL -eq 1 ]]; then
 fi
 
 # --- which version -----------------------------------------------------------
-if [[ -z "$TAG" ]]; then
-  TAG=$(git ls-remote --tags --refs "$REPO_URL" 'v*' 2>/dev/null | awk -F/ '{print $3}' \
-        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
-fi
-[[ -n "$TAG" ]] || die "could not find the latest SimpMusic release"
-VERSION="${TAG#v}"
-FULL_VERSION="$VERSION+gtk.$(ui_rev)"
-log "SimpMusic: $VERSION, interface: $(ui_rev)"
+source "$SCRIPT_DIR/upstream.env"
+VERSION="${SIMPMUSIC_TAG#v}"
+UI_REV="$(ui_rev)"
+FULL_VERSION="$VERSION+gtk.$UI_REV"
+log "SimpMusic: $VERSION, interface: $UI_REV"
 
 INSTALLED=""
 if [[ $BUILD_ONLY -eq 0 ]]; then
-  INSTALLED=$(rsh "cat $REMOTE_DIR/VERSION 2>/dev/null" || true)
+  INSTALLED=$(rsh "if test -f $REMOTE_DIR/VERSION; then cat $REMOTE_DIR/VERSION; fi")
   echo "On the phone: ${INSTALLED:-not installed}"
 fi
 if [[ $CHECK -eq 1 ]]; then
@@ -97,7 +92,7 @@ if [[ $CHECK -eq 1 ]]; then
   exit 0
 fi
 if [[ $BUILD_ONLY -eq 0 && "$INSTALLED" == "$FULL_VERSION" && $FORCE -eq 0 ]]; then
-  echo "Already the latest version. To reinstall: --force"
+  echo "The pinned build is already installed. To reinstall: --force"
   exit 0
 fi
 
@@ -110,34 +105,21 @@ else
   [[ -d "$ANDROID_HOME/platforms" ]] || die "no Android SDK in $ANDROID_HOME (SimpMusic's Gradle project needs it to configure)"
   command -v clang >/dev/null && command -v ld.lld >/dev/null || die "clang and lld are required (for sixel-stub/)"
 
-  if [[ ! -d "$SRC_DIR/.git" ]]; then
-    log "Cloning SimpMusic"
-    git clone --filter=blob:none "$REPO_URL" "$SRC_DIR"
-  fi
+  log "Preparing pinned SimpMusic sources"
+  SIMPMUSIC_SRC="$SRC_DIR" "$SCRIPT_DIR/tools/fetch-upstream.sh"
   cd "$SRC_DIR"
-  log "Checking out $TAG"
-  git fetch --tags --force --quiet origin
-  git checkout --quiet --force "$TAG"
-  git submodule update --init --recursive --force --quiet
-  git clean -fdxq -e local.properties -e build -e '*/build' -e .gradle -e .kotlin
-  git submodule foreach --quiet 'git checkout --quiet --force . && git clean -fdq'
   echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-  log "Patches"
-  apply_patch() {  # <dir> <patch>
-    echo "  $2"
-    git -C "$1" apply "$PATCH_DIR/$2" || die "patch $2 does not apply, regenerate it for the new version"
+  restore_sources() {
+    git -C "$SRC_DIR" restore --worktree :/
+    git -C "$SRC_DIR/core" restore --worktree :/
   }
-  apply_patch . 01-gtk-module.patch
-  apply_patch core 02-core-progress-tick.patch
-  apply_patch core 03-core-mpv-stay-local.patch
-
+  trap restore_sources EXIT
   log "Building (5-10 minutes the first time)"
-  rc=0; ./gradlew --no-configuration-cache -PisFullBuild=false :gtkApp:gtkDist || rc=$?
-  # Back to clean sources, so that the next checkout doesn't trip over the patches.
-  git checkout --quiet --force .
-  git -C core checkout --quiet --force .
-  [[ $rc -eq 0 ]] || die "the build failed, see the errors above"
+  GTK_UI_DIR="$SCRIPT_DIR/gtk-ui" ./gradlew --no-configuration-cache -PisFullBuild=false :gtkApp:gtkDist ||
+    die "the build failed, see the errors above"
+  restore_sources
+  trap - EXIT
 
   log "Packaging: $DIST"
   rm -rf "$DIST" && mkdir -p "$DIST/native"

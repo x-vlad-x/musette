@@ -21,7 +21,7 @@ index 7feae706..31471700 100644
  
 +// GTK front-end patch: the native GNOME interface, kept outside this checkout (see ../gtk-ui).
 +include(":gtkApp")
-+project(":gtkApp").projectDir = File(rootDir, "../gtk-ui")
++project(":gtkApp").projectDir = System.getenv("GTK_UI_DIR")?.let(::File) ?: File(rootDir, "../gtk-ui")
 +
  // core modules
  project(":common").projectDir = File(coreDir, "common")
