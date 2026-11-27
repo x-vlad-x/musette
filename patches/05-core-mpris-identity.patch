@@ -1,0 +1,25 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: Let downstream applications set their MPRIS identity
+Date: 2026-11-27
+Upstream status: Local only
+
+Set the Linux player name and desktop entry through system properties so
+Phosh can use the installed application name and icon.
+
+diff --git a/data/src/jvmMain/kotlin/com/maxrave/data/mediaservice/JvmMediaPlayerHandlerImpl.kt b/data/src/jvmMain/kotlin/com/maxrave/data/mediaservice/JvmMediaPlayerHandlerImpl.kt
+index 62fa92c..3e8ed5a 100644
+--- a/data/src/jvmMain/kotlin/com/maxrave/data/mediaservice/JvmMediaPlayerHandlerImpl.kt
++++ b/data/src/jvmMain/kotlin/com/maxrave/data/mediaservice/JvmMediaPlayerHandlerImpl.kt
+@@ -231,10 +231,10 @@ class JvmMediaPlayerHandlerImpl(
+             Platform.MacOs
+         } else {
+             Platform.Linux(
+-                "SimpMusic",
++                System.getProperty("simpmusic.mpris.identity", "SimpMusic"),
+                 // MPRIS DesktopEntry: GNOME takes the media widget's icon from "<this>.desktop",
+                 // so it must name the file the AppImage's AppRun installs (desktopApp/build.gradle.kts).
+-                "com-maxrave-simpmusic-MainKt",
++                System.getProperty("simpmusic.mpris.desktopEntry", "com-maxrave-simpmusic-MainKt"),
+             )
+         }
+     }

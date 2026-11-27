@@ -32,6 +32,8 @@ fun main(args: Array<String>) {
         println(BuildInfo.summary())
         return
     }
+    System.setProperty("simpmusic.mpris.identity", APP_NAME)
+    System.setProperty("simpmusic.mpris.desktopEntry", APP_ID)
     // libhybris devices (FuriOS, Droidian…): the GPU driver lives under /android, which WebKit's
     // bubblewrap sandbox hides, so the web process dies loading libEGL and the sign-in page stays
     // blank. That web view only ever shows Google's sign-in pages.
