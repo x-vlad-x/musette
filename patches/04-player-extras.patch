@@ -1,0 +1,44 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: Let front ends skip automatic player extras
+Date: 2026-11-27
+Upstream status: Local only
+
+GTK displays neither lyrics nor animated artwork. Skip requests for both
+while playback is running in front ends that opt out.
+
+diff --git a/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt b/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
+index 8ed90bcf..a29de656 100644
+--- a/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
++++ b/composeApp/src/commonMain/kotlin/com/maxrave/simpmusic/viewModel/SharedViewModel.kt
+@@ -111,6 +111,7 @@ import kotlinx.coroutines.runBlocking
+ import kotlinx.coroutines.withContext
+ import org.jetbrains.compose.resources.getString
+ import org.koin.core.component.inject
++import org.koin.core.qualifier.named
+ import org.simpmusic.lastfm.completeLogin
+ import simpmusic.composeapp.generated.resources.Res
+ import simpmusic.composeapp.generated.resources.added_local_playlist
+@@ -155,6 +156,7 @@ class SharedViewModel(
+     var showedUpdateDialog: Boolean = false
+
+     private val appIdentity: AppIdentity by inject()
++    private val fetchPlayerExtras = getKoin().getOrNull<Boolean>(named("fetchPlayerExtras")) ?: true
+
+     private val _isCheckingUpdate = MutableStateFlow(false)
+     val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate
+@@ -679,6 +681,7 @@ class SharedViewModel(
+         videoId: String,
+         duration: Int,
+     ) {
++        if (!fetchPlayerExtras) return
+         Logger.w(tag, "Start getCanvas: $videoId $duration")
+ //        canvasJob?.cancel()
+         viewModelScope.launch {
+@@ -1640,6 +1643,7 @@ class SharedViewModel(
+         song: SongEntity,
+         duration: Int,
+     ) {
++        if (!fetchPlayerExtras) return
+         // A live broadcast has nothing to sync lyrics to — the "duration" mpv reports for it is only
+         // its seek window — so no provider is asked. Every caller comes through here.
+         if (LiveStreamRegistry.isLive(song.videoId)) return

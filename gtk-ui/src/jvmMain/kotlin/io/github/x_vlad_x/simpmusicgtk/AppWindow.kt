@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import com.maxrave.common.Config
 import com.maxrave.domain.data.model.browse.album.Track
 import com.maxrave.domain.data.model.home.Content
+import com.maxrave.domain.data.player.AppOnScreen
 import com.maxrave.domain.mediaservice.handler.PlaylistType
 import com.maxrave.domain.mediaservice.handler.QueueData
 import com.maxrave.domain.utils.toTrack
@@ -30,6 +31,8 @@ import org.gnome.adw.ViewSwitcher
 import org.gnome.adw.ViewSwitcherBar
 import org.gnome.adw.ViewSwitcherPolicy
 import org.gnome.adw.WindowTitle
+import org.gnome.gdk.Toplevel
+import org.gnome.gdk.ToplevelState
 import org.gnome.glib.GLib
 import org.gnome.gtk.Widget
 import org.koin.mp.KoinPlatform.getKoin
@@ -61,6 +64,10 @@ class AppWindow(
         window.title = "SimpMusic"
         window.setDefaultSize(420, 860)
         window.setSizeRequest(360, 500)
+        window.onRealize { window.surface?.onNotify("state") { updateOnScreen() } }
+        window.onNotify("is-active") { updateOnScreen() }
+        window.onMap { updateOnScreen() }
+        window.onUnmap { AppOnScreen.set(false) }
 
         val stack = ViewStack()
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -146,6 +153,14 @@ class AppWindow(
             }
             true
         }
+    }
+
+    private fun updateOnScreen() {
+        val state = (window.surface as? Toplevel)?.state.orEmpty()
+        AppOnScreen.set(
+            window.mapped && window.isActive &&
+                ToplevelState.MINIMIZED !in state && ToplevelState.SUSPENDED !in state,
+        )
     }
 
     fun addAccountListener(listener: () -> Unit) {

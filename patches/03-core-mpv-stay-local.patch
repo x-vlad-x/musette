@@ -1,5 +1,13 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: Keep libmpv loaded privately
+Date: 2026-11-27
+Upstream status: Local only
+
+Avoid a second load with global symbol visibility. libmujs exports symbols
+also used by QuickJS, which can crash while deciphering stream signatures.
+
 diff --git a/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt b/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
-index f541816..571097e 100644
+index f541816..c9a9953 100644
 --- a/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
 +++ b/media/media-jvm/src/main/java/com/simpmusic/media_jvm/mpv/MpvLibrary.kt
 @@ -439,10 +439,12 @@ interface MpvLibrary : Library {

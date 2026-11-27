@@ -12,7 +12,7 @@
 #   PHONE=user@host ./update-simpmusic-gtk.sh  SSH destination (default: "furios", e.g. from ~/.ssh/config)
 #
 # How it works: SimpMusic's core (YouTube Music client, streams, database, mpv player) and its
-# ViewModels come from the official repository, with three small patches (patches/). The interface
+# ViewModels come from the official repository, with small patches (patches/). The interface
 # is our own, built on GTK4/libadwaita through java-gi (gtk-ui/). The JVM bytecode is the same on
 # every architecture, so everything is built on this PC; the phone gets its own Java 25 runtime.
 # On the phone the program lives in ~/.local/share/simpmusic-gtk, its data in the home/ folder there.
@@ -107,14 +107,13 @@ else
 
   log "Preparing pinned SimpMusic sources"
   SIMPMUSIC_SRC="$SRC_DIR" "$SCRIPT_DIR/tools/fetch-upstream.sh"
-  cd "$SRC_DIR"
-  echo "sdk.dir=$ANDROID_HOME" > local.properties
-
   restore_sources() {
     git -C "$SRC_DIR" restore --worktree :/
     git -C "$SRC_DIR/core" restore --worktree :/
   }
   trap restore_sources EXIT
+  cd "$SRC_DIR"
+  echo "sdk.dir=$ANDROID_HOME" > local.properties
   log "Building (5-10 minutes the first time)"
   GTK_UI_DIR="$SCRIPT_DIR/gtk-ui" ./gradlew --no-configuration-cache -PisFullBuild=false :gtkApp:gtkDist ||
     die "the build failed, see the errors above"

@@ -5,6 +5,7 @@ import com.maxrave.common.SELECTED_LANGUAGE
 import com.maxrave.common.SUPPORTED_LANGUAGE
 import com.maxrave.common.SUPPORTED_LOCATION
 import com.maxrave.data.di.loader.loadAllModules
+import com.maxrave.domain.data.player.AppOnScreen
 import com.maxrave.domain.manager.DataStoreManager
 import com.maxrave.simpmusic.BuildKonfig
 import com.maxrave.simpmusic.di.viewModelModule
@@ -15,6 +16,8 @@ import org.gnome.adw.Application
 import org.gnome.gio.ApplicationFlags
 import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
 import org.koin.mp.KoinPlatform.getKoin
 import java.util.Locale
 
@@ -25,6 +28,7 @@ fun main(args: Array<String>) {
     // bubblewrap sandbox hides, so the web process dies loading libEGL and the sign-in page stays
     // blank. That web view only ever shows Google's sign-in pages.
     if (java.io.File("/android/system").isDirectory) setEnv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1")
+    AppOnScreen.set(false)
     startKoin {
         loadAllModules(
             AppIdentity(
@@ -34,6 +38,7 @@ fun main(args: Array<String>) {
             ),
         )
         loadKoinModules(viewModelModule)
+        loadKoinModules(module { single(named("fetchPlayerExtras")) { false } })
     }
     changeLanguageNative(followSystemLanguage(getKoin().get()))
 
