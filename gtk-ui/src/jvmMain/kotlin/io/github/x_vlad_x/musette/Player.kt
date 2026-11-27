@@ -1,4 +1,6 @@
-package io.github.x_vlad_x.simpmusicgtk
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.x_vlad_x.musette
 
 import com.maxrave.domain.data.model.browse.album.Track
 import com.maxrave.domain.mediaservice.handler.MediaPlayerHandler

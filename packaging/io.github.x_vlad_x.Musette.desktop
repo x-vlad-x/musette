@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Musette
+GenericName=Music Player
+GenericName[ru]=Музыкальный проигрыватель
+Comment=Unofficial YouTube Music client built on SimpMusic
+Comment[ru]=Неофициальный клиент YouTube Music на базе SimpMusic
+Icon=io.github.x_vlad_x.Musette
+Exec=musette
+Terminal=false
+StartupNotify=true
+Categories=AudioVideo;Audio;Player;Music;GTK;GNOME;
+Keywords=Music;YouTube;YouTube Music;Player;
+X-Purism-FormFactor=Mobile;

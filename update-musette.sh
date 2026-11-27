@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Builds SimpMusic with a native GNOME interface (GTK4 + libadwaita) for aarch64 Linux phones
-# (tested on the FuriLabs FLX1s with FuriOS) and installs it over SSH.
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Builds Musette for the FuriLabs FLX1s with FuriOS and installs it over SSH.
 #
-#   ./update-simpmusic-gtk.sh                 build and install the revision in upstream.env
-#   ./update-simpmusic-gtk.sh --force         rebuild and reinstall even if the version is the same
-#   ./update-simpmusic-gtk.sh --build-only    only build, don't install on the phone
-#   ./update-simpmusic-gtk.sh --check         compare the phone installation with the pinned build
-#   ./update-simpmusic-gtk.sh --uninstall     remove from the phone (account, history and settings are kept;
+#   ./update-musette.sh                 build and install the revision in upstream.env
+#   ./update-musette.sh --force         rebuild and reinstall even if the version is the same
+#   ./update-musette.sh --build-only    only build, don't install on the phone
+#   ./update-musette.sh --check         compare the phone installation with the pinned build
+#   ./update-musette.sh --uninstall     remove from the phone (account, history and settings are kept;
 #                                             --uninstall --purge removes them too)
 #
-#   PHONE=user@host ./update-simpmusic-gtk.sh  SSH destination (default: "furios", e.g. from ~/.ssh/config)
+#   PHONE=user@host ./update-musette.sh  SSH destination (default: "furios", e.g. from ~/.ssh/config)
 #
 # How it works: SimpMusic's core (YouTube Music client, streams, database, mpv player) and its
 # ViewModels come from the official repository, with small patches (patches/). The interface
 # is our own, built on GTK4/libadwaita through java-gi (gtk-ui/). The JVM bytecode is the same on
 # every architecture, so everything is built on this PC; the phone gets its own Java 25 runtime.
-# On the phone the program lives in ~/.local/share/simpmusic-gtk, its data in the home/ folder there.
+# The developer install lives in ~/.local/lib/musette. The launcher uses the XDG data and cache directories.
 
 set -euo pipefail
 
@@ -24,12 +24,11 @@ SRC_DIR="$(realpath -m "${SIMPMUSIC_SRC:-$SCRIPT_DIR/SimpMusic}")"
 PATCH_DIR="$SCRIPT_DIR/patches"
 OUT_DIR="$SCRIPT_DIR/out"
 PHONE="${PHONE:-furios}"                       # SSH host, e.g. from ~/.ssh/config
-REMOTE_DIR=".local/share/simpmusic-gtk"        # relative to $HOME on the phone
-APP_ID="io.github.x_vlad_x.SimpMusicGtk"
-JRE_URL="https://api.adoptium.net/v3/binary/latest/25/ga/linux/aarch64/jre/hotspot/normal/eclipse"
-# Left over from earlier builds (the Compose desktop build and the old app id), removed on install.
-LEGACY_FILES=".local/share/simpmusic .local/share/applications/simpmusic.desktop .skiko"
-LEGACY_FILES+=" .local/share/applications/com.maxrave.simpmusic.gtk.desktop .local/share/icons/hicolor/256x256/apps/simpmusic.png"
+REMOTE_DIR=".local/lib/musette"
+APP_ID="io.github.x_vlad_x.Musette"
+JRE_VERSION="Temurin-25.0.4.1+1"
+JRE_URL="https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jre_aarch64_linux_hotspot_25.0.4.1_1.tar.gz"
+JRE_SHA256="34828cbb93ed31c281c84ecb31ddab655d11a802f263c1fc019d42e9e0230fed"
 
 export JAVA_HOME="${JAVA_HOME_21:-$HOME/Android/jdk-21}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
@@ -51,25 +50,37 @@ done
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mError: %s\033[0m\n' "$*" >&2; exit 1; }
 rsh() { ssh -o BatchMode=yes -o ConnectTimeout=10 "$PHONE" "$@"; }
-stop_app() { rsh "pkill -f '[s]impmusicgtk[.]MainKt|[s]impmusic[.]gtk[.]MainKt' ; true"; }
+stop_app() { rsh "pkill -f '[i]o.github.x_vlad_x.musette[.]MainKt' || true"; }
 
 ui_rev() {
   find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging" \
        "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
-       "$SCRIPT_DIR/update-simpmusic-gtk.sh" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
+       "$SCRIPT_DIR/update-musette.sh" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
 }
 
 # --- uninstall ---------------------------------------------------------------
 if [[ $UNINSTALL -eq 1 ]]; then
-  [[ $PURGE -eq 1 ]] && log "Removing SimpMusic (GTK) from the phone, including its data" \
-                     || log "Removing SimpMusic (GTK) from the phone (account, history and settings are kept)"
+  if [[ $PURGE -eq 1 ]]; then
+    log "Removing Musette and its profile from the phone"
+  else
+    log "Removing Musette from the phone and keeping its profile"
+  fi
   stop_app
-  if [[ $PURGE -eq 1 ]]; then cmd="rm -rf $REMOTE_DIR;"
-  else cmd="find $REMOTE_DIR -mindepth 1 -maxdepth 1 ! -name home -exec rm -rf {} + 2>/dev/null;"; fi
-  cmd+="rm -rf .local/share/applications/$APP_ID.desktop .cache/simpmusic-gtk $LEGACY_FILES;"
-  cmd+="update-desktop-database .local/share/applications 2>/dev/null; true"
-  rsh "$cmd"
-  rsh "ls -d $REMOTE_DIR/home 2>/dev/null | sed 's/^/  kept: ~\//'" || true
+  rsh bash -s -- "$REMOTE_DIR" "$APP_ID" "$PURGE" <<'REMOTE'
+set -e
+install_dir=$1
+app_id=$2
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
+if [ "$(readlink .local/bin/musette || :)" = "$HOME/$install_dir/musette" ]; then
+  rm .local/bin/musette
+fi
+rm -rf "$install_dir" "$cache_home/musette"
+rm -f "$data_home/applications/$app_id.desktop" "$data_home/metainfo/$app_id.metainfo.xml" \
+  "$data_home/icons/hicolor/scalable/apps/$app_id.svg" "$data_home/icons/hicolor/symbolic/apps/$app_id-symbolic.svg"
+if [ "$3" -eq 1 ]; then rm -rf "$data_home/musette"; fi
+update-desktop-database "$data_home/applications" 2>/dev/null || true
+REMOTE
   log "Done"
   exit 0
 fi
@@ -97,7 +108,7 @@ if [[ $BUILD_ONLY -eq 0 && "$INSTALLED" == "$FULL_VERSION" && $FORCE -eq 0 ]]; t
 fi
 
 # --- build -------------------------------------------------------------------
-DIST="$OUT_DIR/simpmusic-gtk-$FULL_VERSION"
+DIST="$OUT_DIR/musette-$FULL_VERSION"
 if [[ -f "$DIST/VERSION" && $FORCE -eq 0 ]]; then
   log "Already built: $DIST"
 else
@@ -125,8 +136,7 @@ else
   cp -r "$SCRIPT_DIR/gtk-ui/build/gtk-dist/lib" "$DIST/lib"
   clang --target=aarch64-linux-gnu -O2 -fPIC -shared -nostdlib -fuse-ld=lld -Wl,-soname,libsixel.so.1 \
     -o "$DIST/native/libsixel.so.1" "$SCRIPT_DIR/sixel-stub/sixel_stub.c"
-  cp "$SCRIPT_DIR/packaging/simpmusic-gtk" "$SCRIPT_DIR/packaging/$APP_ID.desktop" \
-     "$SCRIPT_DIR/packaging/$APP_ID.png" "$DIST/"
+  cp "$SCRIPT_DIR"/packaging/* "$DIST/"
   echo "$FULL_VERSION" > "$DIST/VERSION"
   echo "Done: $DIST ($(du -sh "$DIST" | cut -f1))"
 fi
@@ -135,31 +145,44 @@ fi
 
 # --- install -----------------------------------------------------------------
 log "Installing on $PHONE"
-rsh "mkdir -p $REMOTE_DIR .local/share/applications"
+rsh "mkdir -p '$REMOTE_DIR' .local/bin"
 
-if ! rsh "test -x $REMOTE_DIR/jre/bin/java"; then
-  if rsh "test -x .local/share/simpmusic/jre/bin/java"; then
-    echo "  taking over the Java runtime of an earlier installation"
-    rsh "mv .local/share/simpmusic/jre $REMOTE_DIR/jre"
+if ! rsh "test -x '$REMOTE_DIR/jre/bin/java'"; then
+  legacy_jre=".local/share/simpmusic-gtk/jre"
+  if rsh "test -x '$legacy_jre/bin/java' && grep -Fxq 'IMPLEMENTOR_VERSION=\"$JRE_VERSION\"' '$legacy_jre/release'"; then
+    rsh "cp -a '$legacy_jre' '$REMOTE_DIR/jre'"
   else
     log "Installing Temurin 25 JRE (aarch64) on the phone"
-    TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+    TMP="$(mktemp -d)"
+    trap 'rm -rf "$TMP"' EXIT
     curl -fsSL -o "$TMP/jre.tar.gz" "$JRE_URL"
-    scp -q "$TMP/jre.tar.gz" "$PHONE:/tmp/simpmusic-jre.tar.gz"
-    rsh "rm -rf $REMOTE_DIR/jre && mkdir $REMOTE_DIR/jre \
-         && tar -xzf /tmp/simpmusic-jre.tar.gz -C $REMOTE_DIR/jre --strip-components=1 && rm /tmp/simpmusic-jre.tar.gz"
+    printf '%s  %s\n' "$JRE_SHA256" "$TMP/jre.tar.gz" | sha256sum --check --status
+    rsh "set -e; cd '$REMOTE_DIR'; mkdir -p .jre-new
+         tar -xzf - -C .jre-new --strip-components=1
+         mv -T .jre-new jre" < "$TMP/jre.tar.gz"
   fi
 fi
 
-# The new jars go next to the old ones and replace them in one go; jre/ and home/ stay as they are.
-tar -C "$DIST" -cf - . | gzip -1 | rsh "set -e; cd $REMOTE_DIR; rm -rf .new && mkdir .new && tar -C .new -xzf -
+tar -C "$DIST" --exclude=./VERSION -cf - . | gzip -1 | rsh "set -e; cd '$REMOTE_DIR'; rm -rf .new && mkdir .new && tar -C .new -xzf -
   rm -rf lib.old; [ -d lib ] && mv lib lib.old; mv .new/lib lib; rm -rf lib.old
-  cp -r .new/. . && rm -rf .new && chmod +x simpmusic-gtk"
-rsh "set -e; sed \"s|@HOME@|\$HOME|g\" $REMOTE_DIR/$APP_ID.desktop > .local/share/applications/$APP_ID.desktop
-     rm -rf $LEGACY_FILES
-     update-desktop-database .local/share/applications 2>/dev/null || true"
+  cp -r .new/. . && rm -rf .new && chmod +x musette"
 
-if rsh "pgrep -f '[s]impmusicgtk[.]MainKt' >/dev/null"; then
-  echo "SimpMusic is running: the new version starts with the next launch."
+rsh bash -s -- "$REMOTE_DIR" "$APP_ID" "$FULL_VERSION" <<'REMOTE'
+set -e
+install_dir=$1
+app_id=$2
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+icons="$data_home/icons/hicolor"
+mkdir -p "$data_home/applications" "$data_home/metainfo" "$icons/scalable/apps" "$icons/symbolic/apps"
+sed 's|^Exec=musette$|Exec="'"$HOME/$install_dir/musette"'"|' \
+  "$install_dir/$app_id.desktop" > "$data_home/applications/$app_id.desktop"
+cp "$install_dir/$app_id.metainfo.xml" "$data_home/metainfo/"
+cp "$install_dir/$app_id.svg" "$icons/scalable/apps/"
+cp "$install_dir/$app_id-symbolic.svg" "$icons/symbolic/apps/"
+if [ ! -e .local/bin/musette ] && [ ! -L .local/bin/musette ]; then
+  ln -s "$HOME/$install_dir/musette" .local/bin/musette
 fi
-log "Installed: $FULL_VERSION, look for \"SimpMusic\" in the app list"
+update-desktop-database "$data_home/applications" 2>/dev/null || true
+printf '%s\n' "$3" > "$install_dir/VERSION"
+REMOTE
+log "Installed $FULL_VERSION. Look for Musette in the app list."

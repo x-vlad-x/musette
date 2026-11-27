@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /* Stub libsixel.so.1 for SimpMusic on FuriOS.
  * The system libmpv links libsixel (image output to a terminal), and the real libsixel aborted the
  * JVM with an assertion in sixel_allocator_* when it shared the process with the app. SimpMusic
  * never needs sixel output: this stub has only the 12 functions libmpv imports, and they all
  * return an error, so vo=sixel simply fails to start.
- * Built by update-simpmusic.sh (clang --target=aarch64-linux-gnu, no libc needed). */
+ * Built by update-musette.sh (clang --target=aarch64-linux-gnu, no libc needed). */
 #define SIXEL_RUNTIME_ERROR 0x1100
 #define EXPORT __attribute__((visibility("default")))
 typedef int SIXELSTATUS;

@@ -1,4 +1,6 @@
-package io.github.x_vlad_x.simpmusicgtk
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.x_vlad_x.musette
 
 import com.maxrave.common.Config
 import com.maxrave.domain.data.entities.GoogleAccountEntity
