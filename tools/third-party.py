@@ -26,7 +26,6 @@ CACHE = Path.home() / ".gradle/caches/modules-2/files-2.1"
 REPOSITORIES = [
     "https://repo.maven.apache.org/maven2",
     "https://dl.google.com/dl/android/maven2",
-    "https://maven.pkg.jetbrains.space/public/p/compose/dev",
     "https://jitpack.io",
 ]
 OWN_MODULES = {"gtkApp-jvm.jar": "Musette"}
@@ -62,6 +61,8 @@ def fetch(url):
         if error.code in (401, 403, 404):
             return None
         raise
+    except urllib.error.URLError:
+        return None
 
 
 def repo_path(group, artifact, version, name):
