@@ -10,8 +10,11 @@ It is built on SimpMusic (https://github.com/maxrave-dev/SimpMusic):
   Copyright maxrave-dev and SimpMusic contributors
   Licensed under the GNU General Public License, version 3.
 The SimpMusic sources are not part of this repository; the build script downloads them from
-https://github.com/maxrave-dev/SimpMusic. The patches in patches/ modify those sources. The
-application icon (packaging/io.github.x_vlad_x.SimpMusicGtk.png) and most of the UI translations
-come from SimpMusic.
+https://github.com/maxrave-dev/SimpMusic. The patches in patches/ modify those sources:
+  2026-11-27: Include the GTK module and expose the Compose translations (01).
+  2026-11-27: Keep libmpv loaded privately to prevent crashes in QuickJS (03).
+  2026-11-27: Skip automatic lyrics and artwork requests from the GTK player (04).
+The application icon (packaging/io.github.x_vlad_x.SimpMusicGtk.png) and most of the UI
+translations come from SimpMusic.
 
 YouTube and YouTube Music are trademarks of Google LLC.

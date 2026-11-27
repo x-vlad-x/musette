@@ -11,7 +11,7 @@ newer).
 | ![Now Playing](docs/screenshots/now-playing.webp) | ![Queue](docs/screenshots/queue.webp) | ![Library](docs/screenshots/library.webp) | ![Home in Russian](docs/screenshots/home-russian.webp) |
 
 The core (YouTube Music client, streams, local database, mpv playback) and the app logic (SimpMusic's
-ViewModels) are the official SimpMusic code with three small patches. The interface is new, written
+ViewModels) are the official SimpMusic code with small patches. The interface is new, written
 in Kotlin with [java-gi](https://github.com/jwharm/java-gi), and adapts to the window: a bottom tab
 bar on a phone, tabs in the header bar on a wider screen.
 
@@ -64,9 +64,8 @@ Runtime dependencies from the system: GTK 4, libadwaita, WebKitGTK 6.0 and libmp
   `SearchPage`, `LibraryPage`, `DetailPages` (album, playlist, artist), `Player` (mini player, Now
   Playing, queue), `Account` (sign-in), `GtkDispatcher` (`Dispatchers.Main` on the GLib main loop),
   `Strings` (translations);
-- `patches/` — patches for SimpMusic: hook `gtk-ui/` into its Gradle build and make its string
-  resources public (01), a slower playback position tick (02), and keep libmpv loaded privately,
-  which otherwise crashes playback after signing in (03);
+- `patches/` — build the GTK module with SimpMusic's translations (01), keep libmpv loaded
+  privately to avoid crashes after sign-in (03), and skip automatic lyrics and artwork requests (04);
 - `sixel-stub/` — a stub `libsixel.so.1`: the system libmpv links libsixel, which aborted the JVM;
 - `packaging/` — launcher, desktop entry and icon.
 
