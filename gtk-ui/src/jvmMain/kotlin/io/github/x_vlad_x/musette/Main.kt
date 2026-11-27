@@ -1,4 +1,6 @@
-package io.github.x_vlad_x.simpmusicgtk
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.x_vlad_x.musette
 
 import com.maxrave.common.AppIdentity
 import com.maxrave.common.SELECTED_LANGUAGE
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.gnome.adw.Application
 import org.gnome.gio.ApplicationFlags
+import org.gnome.glib.GLib
 import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
@@ -21,7 +24,8 @@ import org.koin.dsl.module
 import org.koin.mp.KoinPlatform.getKoin
 import java.util.Locale
 
-const val APP_ID = "io.github.x_vlad_x.SimpMusicGtk"
+const val APP_ID = "io.github.x_vlad_x.Musette"
+const val APP_NAME = "Musette"
 
 fun main(args: Array<String>) {
     // libhybris devices (FuriOS, Droidian…): the GPU driver lives under /android, which WebKit's
@@ -32,7 +36,7 @@ fun main(args: Array<String>) {
     startKoin {
         loadAllModules(
             AppIdentity(
-                applicationId = "com.maxrave.simpmusic",
+                applicationId = APP_ID,
                 versionName = BuildKonfig.versionName,
                 platform = "${System.getProperty("os.name")} ${System.getProperty("os.version")} (GTK)",
             ),
@@ -43,6 +47,7 @@ fun main(args: Array<String>) {
     changeLanguageNative(followSystemLanguage(getKoin().get()))
 
     // GApplication is single-instance by itself: a second launch just re-activates this one.
+    GLib.setApplicationName(APP_NAME)
     val app = Application(APP_ID, ApplicationFlags.DEFAULT_FLAGS)
     var window: AppWindow? = null
     // gtk_init runs setlocale(LC_ALL, ""), which undoes the LC_NUMERIC=C that MpvLibrary set when

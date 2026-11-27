@@ -1,4 +1,4 @@
-# SimpMusic sources, cloned by update-simpmusic-gtk.sh
+# SimpMusic sources, cloned by tools/fetch-upstream.sh
 /SimpMusic/
 # Build output
 /gtk-ui/build/

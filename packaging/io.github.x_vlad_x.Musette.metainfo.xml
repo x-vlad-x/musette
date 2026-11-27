@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC0-1.0 -->
+<component type="desktop-application">
+  <id>io.github.x_vlad_x.Musette</id>
+  <metadata_license>GPL-3.0-or-later OR CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>Musette</name>
+  <summary>YouTube Music player for Linux phones</summary>
+  <developer id="io.github.x_vlad_x">
+    <name>Vladislav Shadiuk</name>
+  </developer>
+  <description>
+    <p>
+      Musette is an unofficial YouTube Music client built on SimpMusic.
+      Browse your library, search for music or queue tracks in a native GNOME
+      interface for FuriOS.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.x_vlad_x.Musette.desktop</launchable>
+  <url type="homepage">https://github.com/x-vlad-x/simpmusic-gtk</url>
+  <url type="bugtracker">https://github.com/x-vlad-x/simpmusic-gtk/issues</url>
+  <provides>
+    <binary>musette</binary>
+  </provides>
+  <supports>
+    <control>touch</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+</component>

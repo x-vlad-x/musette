@@ -1,4 +1,6 @@
-package io.github.x_vlad_x.simpmusicgtk
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.x_vlad_x.musette
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
@@ -61,7 +63,8 @@ class AppWindow(
     private val accountListeners = mutableListOf<() -> Unit>()
 
     init {
-        window.title = "SimpMusic"
+        window.title = APP_NAME
+        window.iconName = APP_ID
         window.setDefaultSize(420, 860)
         window.setSizeRequest(360, 500)
         window.onRealize { window.surface?.onNotify("state") { updateOnScreen() } }
@@ -84,7 +87,7 @@ class AppWindow(
                 this.stack = stack
                 policy = ViewSwitcherPolicy.WIDE
             }
-        val narrowTitle = WindowTitle("SimpMusic", "")
+        val narrowTitle = WindowTitle(APP_NAME, "")
         val header =
             HeaderBar().apply {
                 packEnd(account.headerButton)
@@ -110,7 +113,7 @@ class AppWindow(
                 }
             },
         )
-        nav.add(NavigationPage(root, "SimpMusic").apply { tag = "root" })
+        nav.add(NavigationPage(root, APP_NAME).apply { tag = "root" })
         nav.onPopped { page -> pageCleanups.remove(page)?.invoke() }
 
         val player = Player(this, appScope)
@@ -122,10 +125,10 @@ class AppWindow(
         toasts.child = player.sheet
         window.content = toasts
 
-        // Debug hook for testing without a touchscreen, comma-separated commands: SIMPMUSIC_GTK_OPEN=
+        // Debug hook for testing without a touchscreen, comma-separated commands: MUSETTE_OPEN=
         // account|login|library|mostplayed|nowplaying|queue|search:<query>|album:<browseId>|
         // playalbum:<browseId> (plays its first track)|artist:<channelId>|playlist:<id>
-        System.getenv("SIMPMUSIC_GTK_OPEN").orEmpty().split(",").forEach { open ->
+        System.getenv("MUSETTE_OPEN").orEmpty().split(",").forEach { open ->
             when {
                 open == "account" -> account.openAccountPage()
                 open == "login" -> account.openLogin()

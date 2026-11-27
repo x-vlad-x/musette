@@ -1,9 +1,15 @@
-# SimpMusic (GTK)
+# Musette
 
-An unofficial native GNOME interface (GTK4 + libadwaita) for [SimpMusic](https://github.com/maxrave-dev/SimpMusic),
-the FOSS YouTube Music client, made for Linux phones. Developed and tested on the FuriLabs FLX1s with
-FuriOS (Phosh), but it should work on any aarch64 phone or tablet with libadwaita 1.7+ (Debian 13 or
-newer).
+Musette is an unofficial YouTube Music client built on [SimpMusic](https://github.com/maxrave-dev/SimpMusic).
+It provides a native GTK4/libadwaita interface for Linux phones running Phosh.
+
+## Supported systems
+
+| Tier | Systems | Meaning |
+|---|---|---|
+| Supported | FuriOS on the FuriLabs FLX1s | Tested before each release. Bugs block releases. |
+| May work | Other Debian-based Phosh systems on arm64, such as Mobian | Fixes are best effort. |
+| Not supported | PCs, other architectures and other mobile systems | Builds target arm64 phones. |
 
 | | | | |
 |:-:|:-:|:-:|:-:|
@@ -37,10 +43,10 @@ because SimpMusic's Gradle project needs it to configure), clang and lld. Gradle
 toolchain by itself. The phone must be reachable over SSH with key authentication.
 
 ```bash
-./update-simpmusic-gtk.sh                # build the pinned SimpMusic revision and install it on the phone
-./update-simpmusic-gtk.sh --check        # compare the phone installation with the pinned build
-./update-simpmusic-gtk.sh --build-only
-./update-simpmusic-gtk.sh --uninstall [--purge]
+./update-musette.sh                # build the pinned SimpMusic revision and install it on the phone
+./update-musette.sh --check        # compare the phone installation with the pinned build
+./update-musette.sh --build-only
+./update-musette.sh --uninstall [--purge]
 ```
 
 The SSH destination is taken from `PHONE` (default `furios`), e.g. `PHONE=furios@192.168.1.10`.
@@ -53,9 +59,10 @@ packages it with its dependencies into `out/`. JVM bytecode is the same
 on every architecture, so nothing is cross-compiled except a tiny native stub (see below). The first
 build takes 5–10 minutes.
 
-On the phone the program is installed to `~/.local/share/simpmusic-gtk` together with its own Java 25
-runtime (Temurin, downloaded on the first install); the account, history and settings are kept in
-`~/.local/share/simpmusic-gtk/home`, thumbnails in `~/.cache/simpmusic-gtk`. No root access is needed.
+The developer install goes to `~/.local/lib/musette` with a private Temurin 25 runtime. Profiles live in
+`${XDG_DATA_HOME:-$HOME/.local/share}/musette`. On first launch, Musette copies an existing profile
+from `~/.local/share/simpmusic-gtk/home` if the new profile directory is absent. Thumbnails and logs
+live in `${XDG_CACHE_HOME:-$HOME/.cache}/musette`. The installation runs as your user.
 Runtime dependencies from the system: GTK 4, libadwaita, WebKitGTK 6.0 and libmpv.
 
 ## Project layout
@@ -67,22 +74,22 @@ Runtime dependencies from the system: GTK 4, libadwaita, WebKitGTK 6.0 and libmp
 - `patches/` — build the GTK module with SimpMusic's translations (01), keep libmpv loaded
   privately to avoid crashes after sign-in (03), and skip automatic lyrics and artwork requests (04);
 - `sixel-stub/` — a stub `libsixel.so.1`: the system libmpv links libsixel, which aborted the JVM;
-- `packaging/` — launcher, desktop entry and icon.
+- `packaging/` — launcher, desktop entry, AppStream metadata and icons.
 
 ## Debugging
 
-The app writes its log to `~/.local/share/simpmusic-gtk/run.log`. For testing without touching the
-screen, `SIMPMUSIC_GTK_OPEN` runs comma-separated commands on start: `account`, `login`, `library`,
+The app writes its log to `${XDG_CACHE_HOME:-$HOME/.cache}/musette/run.log`.
+The `MUSETTE_OPEN` variable accepts comma-separated commands such as `account`, `login`, `library`,
 `mostplayed`, `nowplaying`, `queue`, `search:<query>`, `album:<browseId>`, `playalbum:<browseId>`
 (also plays its first track), `artist:<channelId>`, `playlist:<id>`. For example:
 
 ```bash
-SIMPMUSIC_GTK_OPEN=playalbum:MPREb_K8qWMWVqXGi,nowplaying ~/.local/share/simpmusic-gtk/simpmusic-gtk
+MUSETTE_OPEN=playalbum:MPREb_K8qWMWVqXGi,nowplaying musette
 ```
 
 ## License
 
 GNU General Public License v3.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-This project is not affiliated with or endorsed by the SimpMusic project. It is built on the
-[SimpMusic](https://github.com/maxrave-dev/SimpMusic) code, icon and translations.
+Musette uses the code and translations from the SimpMusic project. Musette is independent of
+SimpMusic and Google.

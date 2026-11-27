@@ -1,4 +1,6 @@
-package io.github.x_vlad_x.simpmusicgtk
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.x_vlad_x.musette
 
 import com.maxrave.domain.data.model.searchResult.songs.Thumbnail
 import kotlinx.coroutines.CoroutineScope
@@ -79,7 +81,7 @@ object Images {
         }
     private val permits = Semaphore(6)
     private val diskDir: Path =
-        Path.of(System.getenv("XDG_CACHE_HOME") ?: (System.getenv("HOME") + "/.cache"), "simpmusic-gtk", "thumbs")
+        Path.of(System.getenv("XDG_CACHE_HOME") ?: (System.getenv("HOME") + "/.cache"), "musette", "thumbs")
 
     fun load(
         url: String?,

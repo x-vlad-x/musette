@@ -1,6 +1,7 @@
-// SimpMusic GTK — a native GNOME (GTK4 + libadwaita) front-end over SimpMusic's own core.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Musette — a native GNOME (GTK4 + libadwaita) front-end over SimpMusic's own core.
 //
-// Lives outside the SimpMusic checkout (update-simpmusic.sh cleans that tree) and is wired in by
+// Lives outside the SimpMusic checkout (update-musette.sh prepares that checkout) and is wired in by
 // patches/01-gtk-module.patch. Reuses composeApp's ViewModels and the core modules (YouTube Music
 // scraper, streams, Room database, mpv player); only the UI is new, written with java-gi.
 plugins {
