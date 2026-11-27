@@ -37,8 +37,8 @@ because SimpMusic's Gradle project needs it to configure), clang and lld. Gradle
 toolchain by itself. The phone must be reachable over SSH with key authentication.
 
 ```bash
-./update-simpmusic-gtk.sh                # build the latest SimpMusic release and install it on the phone
-./update-simpmusic-gtk.sh --check        # what is installed on the phone, is there an update
+./update-simpmusic-gtk.sh                # build the pinned SimpMusic revision and install it on the phone
+./update-simpmusic-gtk.sh --check        # compare the phone installation with the pinned build
 ./update-simpmusic-gtk.sh --build-only
 ./update-simpmusic-gtk.sh --uninstall [--purge]
 ```
@@ -47,8 +47,9 @@ The SSH destination is taken from `PHONE` (default `furios`), e.g. `PHONE=furios
 The JDK and the SDK are looked up in `JAVA_HOME_21` (default `~/Android/jdk-21`) and `ANDROID_HOME`
 (default `~/Android/Sdk`).
 
-The script clones SimpMusic at the latest release tag into `SimpMusic/`, applies the patches, builds
-the interface with Gradle and packages it with its dependencies into `out/`. JVM bytecode is the same
+The script checks out the exact SimpMusic and core commits in `upstream.env` into `SimpMusic/` and
+rejects patches that need an offset or missing context. It builds the interface with Gradle and
+packages it with its dependencies into `out/`. JVM bytecode is the same
 on every architecture, so nothing is cross-compiled except a tiny native stub (see below). The first
 build takes 5–10 minutes.
 
