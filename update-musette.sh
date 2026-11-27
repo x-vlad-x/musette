@@ -26,9 +26,6 @@ OUT_DIR="$SCRIPT_DIR/out"
 PHONE="${PHONE:-furios}"                       # SSH host, e.g. from ~/.ssh/config
 REMOTE_DIR=".local/lib/musette"
 APP_ID="io.github.x_vlad_x.Musette"
-JRE_VERSION="Temurin-25.0.4.1+1"
-JRE_URL="https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jre_aarch64_linux_hotspot_25.0.4.1_1.tar.gz"
-JRE_SHA256="34828cbb93ed31c281c84ecb31ddab655d11a802f263c1fc019d42e9e0230fed"
 
 export JAVA_HOME="${JAVA_HOME_21:-$HOME/Android/jdk-21}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
@@ -55,7 +52,8 @@ stop_app() { rsh "pkill -f '[i]o.github.x_vlad_x.musette[.]MainKt' || true"; }
 ui_rev() {
   find "$SCRIPT_DIR/gtk-ui/src" "$SCRIPT_DIR/gtk-ui/build.gradle.kts" "$PATCH_DIR" "$SCRIPT_DIR/packaging" \
        "$SCRIPT_DIR/sixel-stub/sixel_stub.c" "$SCRIPT_DIR/VERSION" "$SCRIPT_DIR/upstream.env" "$SCRIPT_DIR/tools/fetch-upstream.sh" \
-       "$SCRIPT_DIR/update-musette.sh" -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
+       "$SCRIPT_DIR/runtime.env" "$SCRIPT_DIR/tools/build-runtime.sh" "$SCRIPT_DIR/update-musette.sh" \
+       -type f -print0 | sort -z | xargs -0 cat | md5sum | cut -c1-8
 }
 
 # --- uninstall ---------------------------------------------------------------
@@ -149,20 +147,23 @@ fi
 log "Installing on $PHONE"
 rsh "mkdir -p '$REMOTE_DIR' .local/bin"
 
-if ! rsh "test -x '$REMOTE_DIR/jre/bin/java'"; then
-  legacy_jre=".local/share/simpmusic-gtk/jre"
-  if rsh "test -x '$legacy_jre/bin/java' && grep -Fxq 'IMPLEMENTOR_VERSION=\"$JRE_VERSION\"' '$legacy_jre/release'"; then
-    rsh "cp -a '$legacy_jre' '$REMOTE_DIR/jre'"
-  else
-    log "Installing Temurin 25 JRE (aarch64) on the phone"
-    TMP="$(mktemp -d)"
-    trap 'rm -rf "$TMP"' EXIT
-    curl -fsSL -o "$TMP/jre.tar.gz" "$JRE_URL"
-    printf '%s  %s\n' "$JRE_SHA256" "$TMP/jre.tar.gz" | sha256sum --check --status
-    rsh "set -e; cd '$REMOTE_DIR'; mkdir -p .jre-new
-         tar -xzf - -C .jre-new --strip-components=1
-         mv -T .jre-new jre" < "$TMP/jre.tar.gz"
-  fi
+runtime_dir="$("$SCRIPT_DIR/tools/build-runtime.sh")"
+runtime_id="$(basename "$(dirname "$runtime_dir")")"
+if ! rsh "test -x '$REMOTE_DIR/jre/bin/java' && grep -Fxq '$runtime_id' '$REMOTE_DIR/.runtime-id'"; then
+  log "Installing the linked Temurin 25 runtime"
+  tar -C "$runtime_dir" -cf - . | gzip -1 | rsh "set -e; cd '$REMOTE_DIR'
+    staging=\$(mktemp -d .jre-new.XXXXXX)
+    trap 'rm -rf -- \"\$staging\"' EXIT
+    tar -C \"\$staging\" -xzf -
+    \"\$staging/bin/java\" --version >/dev/null
+    rm -rf jre.old
+    if [ -e jre ]; then mv jre jre.old; fi
+    if ! mv -T \"\$staging\" jre; then
+      if [ -e jre.old ]; then mv jre.old jre; fi
+      exit 1
+    fi
+    printf '%s\n' '$runtime_id' > .runtime-id
+    rm -rf jre.old"
 fi
 
 tar -C "$DIST" --exclude=./VERSION -cf - . | gzip -1 | rsh "set -e; cd '$REMOTE_DIR'; rm -rf .new && mkdir .new && tar -C .new -xzf -
