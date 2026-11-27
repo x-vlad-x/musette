@@ -15,6 +15,7 @@ https://github.com/maxrave-dev/SimpMusic. The patches in patches/ modify those s
   2026-11-27: Keep libmpv loaded privately to prevent crashes in QuickJS (03).
   2026-11-27: Skip automatic lyrics and artwork requests from the GTK player (04).
   2026-11-27: Make the MPRIS player name and desktop entry configurable (05).
+  2026-11-27: Refresh the current track rating after an account change (06).
 Most of the UI translations come from SimpMusic.
 
 YouTube and YouTube Music are trademarks of Google LLC.

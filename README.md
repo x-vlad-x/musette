@@ -27,6 +27,7 @@ bar on a phone, tabs in the header bar on a wider screen.
 - library: liked songs, followed artists, most played, downloads, your playlists, YouTube playlists
   and mixes of the signed-in account, saved albums and playlists, recently added;
 - mini player and a Now Playing sheet: seek, shuffle, repeat, like, queue;
+- likes sync to YouTube when signed in. Signed-out likes stay in local favorites;
 - MPRIS playback controls and track information in Phosh;
 - background playback when the window is closed. Open Musette again to show the window, or use
   **Quit** in the window menu to stop playback and exit;
@@ -79,7 +80,7 @@ The `musette --version` command also reports the upstream version without openin
   `Strings` (translations);
 - `patches/` — build the GTK module with SimpMusic's translations (01), keep libmpv loaded
   privately to avoid crashes after sign-in (03), skip automatic lyrics and artwork requests (04)
-  and configure the MPRIS identity (05);
+  and configure the MPRIS identity (05). Patch 06 refreshes the current rating after an account change;
 - `sixel-stub/` — a stub `libsixel.so.1`: the system libmpv links libsixel, which aborted the JVM;
 - `packaging/` — launcher, desktop entry, AppStream metadata and icons.
 

@@ -3,18 +3,27 @@
 package io.github.x_vlad_x.musette
 
 import com.maxrave.domain.data.model.browse.album.Track
+import com.maxrave.domain.manager.DataStoreManager
 import com.maxrave.domain.mediaservice.handler.MediaPlayerHandler
 import com.maxrave.domain.mediaservice.handler.NowPlayingTrackState
 import com.maxrave.domain.mediaservice.handler.RepeatState
+import com.maxrave.domain.utils.YouTubeLikeStatus
 import com.maxrave.domain.utils.connectArtists
 import com.maxrave.domain.utils.toListName
 import com.maxrave.simpmusic.viewModel.UIEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.gnome.adw.BottomSheet
 import org.gnome.adw.Clamp
+import org.gnome.gio.SimpleAction
 import org.gnome.glib.GLib
 import org.gnome.gtk.Adjustment
 import org.gnome.gtk.Align
@@ -51,6 +60,10 @@ class Player(
 ) {
     private val shared = app.shared
     private val handler: MediaPlayerHandler = getKoin().get()
+    private val youtubeSignedIn: StateFlow<Boolean?> =
+        shared.getYouTubeLoggedIn()
+            .map { it == DataStoreManager.TRUE }
+            .stateIn(scope, SharingStarted.Eagerly, null)
     val sheet = BottomSheet()
 
     // Mini player
@@ -75,7 +88,24 @@ class Player(
     private val nextButton = iconButton("media-skip-forward-symbolic", gtr("next"), "flat", "circular") { shared.onUIEvent(UIEvent.Next) }
     private val shuffle = ToggleButton().apply { iconName = "media-playlist-shuffle-symbolic"; tooltipText = tr(Res.string.shuffle); addCssClass("flat"); addCssClass("circular"); valign = Align.CENTER }
     private val repeat = ToggleButton().apply { iconName = "media-playlist-repeat-symbolic"; tooltipText = repeatOff; addCssClass("flat"); addCssClass("circular"); valign = Align.CENTER }
-    private val like = iconButton("starred-symbolic", tr(Res.string.like), "flat", "circular") { shared.onUIEvent(UIEvent.ToggleLike) }
+    private val likeAction =
+        SimpleAction("toggle-like", null).apply {
+            enabled = false
+            onActivate {
+                when (youtubeSignedIn.value) {
+                    true -> shared.addToYouTubeLiked()
+                    false -> shared.onUIEvent(UIEvent.ToggleLike)
+                    null -> Unit
+                }
+            }
+        }
+    private val like =
+        Button().apply {
+            iconName = "starred-symbolic"
+            actionName = "app.toggle-like"
+            addCssClass("flat")
+            addCssClass("circular")
+        }
     private val queueList = boxedList()
     private val sheetStack = Stack().apply { transitionType = StackTransitionType.SLIDE_LEFT_RIGHT }
 
@@ -85,6 +115,10 @@ class Player(
     private var lastQueueKey: Any? = null
 
     init {
+        requireNotNull(app.window.application).addAction(likeAction)
+        app.addAccountListener {
+            if (youtubeSignedIn.value == true) shared.refreshYouTubeLikeStatus()
+        }
         sheet.bottomBar = miniPlayer()
         sheet.sheet = sheetStack
         sheet.revealBottomBar = false
@@ -130,7 +164,22 @@ class Player(
                         RepeatState.One -> repeatOne
                     }
                 syncingControls = false
-                if (state.isLiked) like.addCssClass("liked") else like.removeCssClass("liked")
+            }
+        }
+        scope.launch {
+            combine(youtubeSignedIn, shared.likeStatus, shared.controllerState) { signedIn, youtubeLike, local ->
+                val liked = if (signedIn == true) youtubeLike == YouTubeLikeStatus.LIKE else local.isLiked
+                signedIn to liked
+            }.distinctUntilChanged().collect { (signedIn, liked) ->
+                if (liked) like.addCssClass("liked") else like.removeCssClass("liked")
+                like.tooltipText =
+                    when {
+                        signedIn == true && liked -> gtr("remove_youtube_like")
+                        signedIn == true -> gtr("like_on_youtube")
+                        liked -> gtr("remove_local_like")
+                        else -> tr(Res.string.like)
+                    }
+                updateLikeAction()
             }
         }
         scope.launch {
@@ -263,6 +312,7 @@ class Player(
         val song = state?.songEntity
         val hasTrack = state != null && state.isNotEmpty() && (track != null || song != null)
         sheet.revealBottomBar = hasTrack
+        updateLikeAction()
         if (!hasTrack) {
             sheet.open = false
             return
@@ -277,6 +327,10 @@ class Player(
         Images.load(thumb, miniCover, scope)
         Images.load(thumb, bigCover, scope)
         renderQueue()
+    }
+
+    private fun updateLikeAction() {
+        likeAction.enabled = sheet.revealBottomBar && youtubeSignedIn.value != null
     }
 
     private fun renderQueue() {
