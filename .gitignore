@@ -4,3 +4,4 @@
 /gtk-ui/build/
 /out/
 *.log
+__pycache__/

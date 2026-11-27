@@ -1,0 +1,37 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Musette
+Upstream-Contact: https://github.com/x-vlad-x/musette/issues
+Source: https://github.com/x-vlad-x/musette
+Comment: Musette is an unofficial YouTube Music client built on SimpMusic. The
+ combined program is distributed under the GNU General Public License, version 3.
+ The Java libraries in /usr/lib/musette/lib are listed with their licences in
+ /usr/share/doc/musette/THIRD-PARTY.md. The complete corresponding source code
+ is attached to each release at https://github.com/x-vlad-x/musette/releases.
+
+Files: *
+Copyright: 2026 Vladislav Shadiuk
+License: GPL-3+
+
+Files: usr/lib/musette/lib/*
+Copyright: maxrave-dev and SimpMusic contributors; see THIRD-PARTY.md for the
+ other libraries
+License: GPL-3
+Comment: SimpMusic (https://github.com/maxrave-dev/SimpMusic) with the patches
+ listed in /usr/share/doc/musette/NOTICE. Third-party libraries keep their own
+ licences, all compatible with GPL-3, as listed in THIRD-PARTY.md.
+
+Files: usr/lib/musette/jre/*
+Copyright: Oracle and/or its affiliates; Eclipse Adoptium contributors
+License: GPL-2 with Classpath exception
+Comment: A reduced Eclipse Temurin runtime made with jlink. Its own legal
+ notices are in /usr/lib/musette/jre/legal.
+
+License: GPL-3+
+ On Debian systems see /usr/share/common-licenses/GPL-3.
+
+License: GPL-3
+ On Debian systems see /usr/share/common-licenses/GPL-3.
+
+License: GPL-2 with Classpath exception
+ On Debian systems see /usr/share/common-licenses/GPL-2. The Classpath
+ exception is in /usr/lib/musette/jre/legal/java.base/LICENSE.

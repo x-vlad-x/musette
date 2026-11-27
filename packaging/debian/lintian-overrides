@@ -1,0 +1,7 @@
+# The bundled Java runtime (a reduced Eclipse Temurin) carries its own copies of these.
+embedded-library * [usr/lib/musette/jre/lib/*]
+# Private libraries of the application, on its own class path; not shared Java packages.
+jar-not-in-usr-share [usr/lib/musette/*]
+codeless-jar [usr/lib/musette/lib/*]
+# Class files for Java 25, which the bundled runtime runs.
+unknown-java-class-version *

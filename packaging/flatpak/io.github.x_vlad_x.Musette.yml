@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Flatpak of Musette for aarch64, built by packaging/flatpak/build-flatpak.sh.
+# libmpv and the two libraries it needs are built from source here: the GNOME runtime has no
+# libmpv. The Musette module takes the prepared jars, Java runtime and launcher from
+# out/packages/flatpak-app (the same files as in the DEB).
+id: io.github.x_vlad_x.Musette
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+command: musette
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # Playback controls in Phosh and on the lock screen.
+  - --own-name=org.mpris.MediaPlayer2.Musette
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - '*.a'
+  - '*.la'
+modules:
+  - name: libass
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://github.com/libass/libass/releases/download/0.17.5/libass-0.17.5.tar.xz
+        sha256: 2dca25c0e0c837ddf00b52011b3f82cac1e4ddd3ad018227806b0c2288864acc
+
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dvulkan=disabled
+      - -Dd3d11=disabled
+      - -Dglslang=disabled
+      - -Dshaderc=disabled
+      - -Dlcms=disabled
+      - -Dlibdovi=disabled
+      - -Dxxhash=disabled
+      - -Ddemos=false
+      - -Dtests=false
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/libplacebo.git
+        tag: v7.351.0
+        commit: 3188549fba13bbdf3a5a98de2a38c2e71f04e21e
+
+  - name: mpv
+    buildsystem: meson
+    # Only the library: Musette drives playback through libmpv and gives it direct stream URLs.
+    # No JavaScript (mujs clashes with Musette's QuickJS) and no Lua or youtube-dl hooks.
+    config-opts:
+      - -Dlibmpv=true
+      - -Dcplayer=false
+      - -Djavascript=disabled
+      - -Dlua=disabled
+      - -Dlibarchive=disabled
+      - -Dlibbluray=disabled
+      - -Ddvdnav=disabled
+      - -Dcdda=disabled
+      - -Duchardet=disabled
+      - -Drubberband=disabled
+      - -Dvapoursynth=disabled
+      - -Dsixel=disabled
+      - -Dcaca=disabled
+      - -Dvulkan=disabled
+      - -Dsdl2-audio=disabled
+      - -Dmanpage-build=disabled
+      - -Dhtml-build=disabled
+      - -Dpdf-build=disabled
+    sources:
+      - type: archive
+        url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.41.0.tar.gz
+        dest-filename: mpv-0.41.0.tar.gz
+        sha256: ee21092a5ee427353392360929dc64645c54479aefdb5babc5cfbb5fad626209
+
+  - name: musette
+    buildsystem: simple
+    build-commands:
+      - install -d /app/lib /app/bin
+      - cp -a lib/musette /app/lib/musette
+      - ln -s ../lib/musette/musette /app/bin/musette
+      - install -Dm644 share/io.github.x_vlad_x.Musette.desktop /app/share/applications/io.github.x_vlad_x.Musette.desktop
+      - install -Dm644 share/io.github.x_vlad_x.Musette.metainfo.xml /app/share/metainfo/io.github.x_vlad_x.Musette.metainfo.xml
+      - install -Dm644 share/io.github.x_vlad_x.Musette.svg /app/share/icons/hicolor/scalable/apps/io.github.x_vlad_x.Musette.svg
+      - install -Dm644 share/io.github.x_vlad_x.Musette-symbolic.svg /app/share/icons/hicolor/symbolic/apps/io.github.x_vlad_x.Musette-symbolic.svg
+      - cp -a doc /app/share/doc
+    sources:
+      - type: dir
+        path: ../../out/packages/flatpak-app
