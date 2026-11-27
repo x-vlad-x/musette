@@ -6,7 +6,7 @@ import org.gnome.adw.AboutDialog
 import org.gnome.gtk.License
 import org.gnome.gtk.Widget
 
-private const val SOURCE_URL = "https://github.com/x-vlad-x/simpmusic-gtk"
+private const val SOURCE_URL = "https://github.com/x-vlad-x/musette"
 
 fun showAbout(parent: Widget) {
     AboutDialog().apply {
