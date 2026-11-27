@@ -27,6 +27,7 @@ bar on a phone, tabs in the header bar on a wider screen.
 - library: liked songs, followed artists, most played, downloads, your playlists, YouTube playlists
   and mixes of the signed-in account, saved albums and playlists, recently added;
 - mini player and a Now Playing sheet: seek, shuffle, repeat, like, queue;
+- MPRIS playback controls and track information in Phosh;
 - YouTube sign-in through Google's page in a web view (WebKitGTK), several accounts, sign-in with a
   cookie as a fallback.
 
@@ -75,7 +76,8 @@ The `musette --version` command also reports the upstream version without openin
   Playing, queue), `Account` (sign-in), `GtkDispatcher` (`Dispatchers.Main` on the GLib main loop),
   `Strings` (translations);
 - `patches/` — build the GTK module with SimpMusic's translations (01), keep libmpv loaded
-  privately to avoid crashes after sign-in (03), and skip automatic lyrics and artwork requests (04);
+  privately to avoid crashes after sign-in (03), skip automatic lyrics and artwork requests (04)
+  and configure the MPRIS identity (05);
 - `sixel-stub/` — a stub `libsixel.so.1`: the system libmpv links libsixel, which aborted the JVM;
 - `packaging/` — launcher, desktop entry, AppStream metadata and icons.
 
